@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Firebase Realtime Database & App Logic Script -->
+    <!-- Firebase Realtime Database Script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -30,10 +30,10 @@
         let selectedFileBase64 = "";
         let selectedFileName = "";
 
-        // Load Notes from Realtime Database Cloud
+        // Load Notes from Cloud Realtime Database
         window.loadCloudNotes = async function() {
             try {
-                const notesRef = ref(db, 'notes');
+                const notesRef = ref(db, 'notes_market_data');
                 const snapshot = await get(notesRef);
                 window.notes = [];
                 if (snapshot.exists()) {
@@ -169,7 +169,7 @@
         window.deleteCloudNote = async function(id) {
             if (confirm("Delete this note from cloud?")) {
                 try {
-                    await remove(ref(db, 'notes/' + id));
+                    await remove(ref(db, 'notes_market_data/' + id));
                     alert("Deleted successfully!");
                     await window.loadCloudNotes();
                     renderAdminTable();
@@ -208,7 +208,7 @@
             };
 
             try {
-                const notesRef = ref(db, 'notes');
+                const notesRef = ref(db, 'notes_market_data');
                 const newNoteRef = push(notesRef);
                 await set(newNoteRef, newNote);
 
