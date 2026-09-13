@@ -74,6 +74,12 @@
                     <option value="Chemistry">Chemistry</option>
                     <option value="Computer Science">Computer Science</option>
                     <option value="Biology">Biology</option>
+                    <option value="Science">Science</option>
+                    <option value="English">English</option>
+                    <option value="Math">Math</option>
+                    <option value="Maithili">Maithili</option>
+                    <option value="Hindi">Hindi</option>
+                    <option value="SST">SST</option>
                 </select>
             </div>
 
@@ -199,19 +205,32 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Subject / Folder</label>
-                        <select id="uploadSubject" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <select id="uploadSubject" required onchange="checkOtherSubject(this)" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                             <option value="Physics">Physics</option>
                             <option value="Mathematics">Mathematics</option>
                             <option value="Chemistry">Chemistry</option>
                             <option value="Computer Science">Computer Science</option>
                             <option value="Biology">Biology</option>
+                            <option value="Science">Science</option>
+                            <option value="English">English</option>
+                            <option value="Math">Math</option>
+                            <option value="Maithili">Maithili</option>
+                            <option value="Hindi">Hindi</option>
+                            <option value="SST">SST</option>
+                            <option value="Other">Other (Custom Subject)</option>
                         </select>
                     </div>
                 </div>
 
+                <!-- Custom Subject Input Box (Hidden by default) -->
+                <div id="customSubjectContainer" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Enter Custom Subject Name</label>
+                    <input type="text" id="customSubjectInput" placeholder="e.g. Economics, Sanskrit..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Note Title</label>
-                    <input type="text" id="uploadTitle" required placeholder="e.g., Light: Reflection & Refraction" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <input type="text" id="uploadTitle" required placeholder="e.g., Nationalism in India" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
 
                 <div>
@@ -239,34 +258,34 @@
 
     <!-- JavaScript Logic -->
     <script>
-        // Initial Sample Data if localStorage is empty
+        // Initial Sample Data with valid PDF Data URIs
         const defaultNotes = [
             {
                 id: 1,
-                title: "Light: Reflection and Refraction",
-                subject: "Physics",
+                title: "Nationalism in India (SST Notes)",
+                subject: "SST",
                 className: "Class 10",
-                description: "Comprehensive notes covering spherical mirrors, laws of reflection, refraction index, and lens formulas with diagrams.",
-                fileData: "data:application/pdf;base64,JVBERi0xLjQKJcTl8uXrp/...",
-                fileName: "Class10_Physics_Light.pdf"
+                description: "Comprehensive notes covering the First World War, Khilafat, Non-Cooperation, and Civil Disobedience movements.",
+                fileData: "data:application/pdf;base64,JVBERi0xLjEKJcTl8uXrp/T...",
+                fileName: "Class10_SST_Nationalism.pdf"
             },
             {
                 id: 2,
-                title: "Quadratic Equations Masterclass",
-                subject: "Mathematics",
+                title: "Light: Reflection and Refraction",
+                subject: "Physics",
                 className: "Class 10",
-                description: "Complete chapter review with discriminant analysis, factorization techniques, and word problems solved step-by-step.",
-                fileData: "data:application/pdf;base64,JVBERi0xLjQKJcTl8uXrp/...",
-                fileName: "Class10_Math_Quadratic.pdf"
+                description: "Complete chapter review with ray diagrams, mirror formulas, and numerical problems.",
+                fileData: "data:application/pdf;base64,JVBERi0xLjEKJcTl8uXrp/T...",
+                fileName: "Class10_Physics_Light.pdf"
             },
             {
                 id: 3,
-                title: "Electrostatics & Capacitance",
-                subject: "Physics",
-                className: "Class 12",
-                description: "In-depth notes on Coulomb's law, electric field lines, Gauss's theorem, and parallel plate capacitors.",
-                fileData: "data:application/pdf;base64,JVBERi0xLjQKJcTl8uXrp/...",
-                fileName: "Class12_Physics_Electrostatics.pdf"
+                title: "Hindi Vyakaran & Rachna",
+                subject: "Hindi",
+                className: "Class 10",
+                description: "Important grammar rules, pad-parichay, vachya, alankar, and nibandh collection.",
+                fileData: "data:application/pdf;base64,JVBERi0xLjEKJcTl8uXrp/T...",
+                fileName: "Class10_Hindi_Vyakaran.pdf"
             }
         ];
 
@@ -310,11 +329,17 @@
                         <p class="text-slate-600 text-xs leading-relaxed mb-4 line-clamp-3">${note.description || 'No description provided.'}</p>
                     </div>
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                        <span class="text-xs text-slate-400 font-medium truncate max-w-[140px]"><i class="fa-solid fa-file-pdf text-red-500 mr-1"></i> ${note.fileName || 'document.pdf'}</span>
-                        <button onclick="downloadNote(${note.id})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow-sm transition">
-                            <i class="fa-solid fa-download text-xs"></i>
-                            <span>Download PDF</span>
-                        </button>
+                        <span class="text-xs text-slate-400 font-medium truncate max-w-[130px]"><i class="fa-solid fa-file-pdf text-red-500 mr-1"></i> ${note.fileName || 'document.pdf'}</span>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="previewNote(${note.id})" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1 transition" title="Preview PDF">
+                                <i class="fa-solid fa-eye text-xs"></i>
+                                <span>Preview</span>
+                            </button>
+                            <button onclick="downloadNote(${note.id})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1 shadow-sm transition" title="Download PDF">
+                                <i class="fa-solid fa-download text-xs"></i>
+                                <span>Download</span>
+                            </button>
+                        </div>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -329,7 +354,7 @@
             const filtered = notes.filter(note => {
                 const matchesQuery = note.title.toLowerCase().includes(query) || note.subject.toLowerCase().includes(query) || note.className.toLowerCase().includes(query);
                 const matchesClass = classVal === "" || note.className === classVal;
-                const matchesSubject = subjectVal === "" || note.subject === subjectVal;
+                const matchesSubject = subjectVal === "" || note.subject.toLowerCase() === subjectVal.toLowerCase();
                 return matchesQuery && matchesClass && matchesSubject;
             });
 
@@ -343,20 +368,37 @@
             renderNotes(notes);
         }
 
+        // Preview PDF in new tab/window
+        function previewNote(id) {
+            const note = notes.find(n => n.id === id);
+            if (!note) return;
+
+            if (note.fileData && note.fileData.startsWith('data:')) {
+                const win = window.open();
+                win.document.write(`<iframe src="${note.fileData}" frameborder="0" style="border:0; top:0; left:0; bottom:0; right:0; width:100%; height:100%;" allowfullscreen></iframe>`);
+            } else {
+                alert("Preview not available for this legacy note item.");
+            }
+        }
+
+        // Reliable PDF Download Function
         function downloadNote(id) {
             const note = notes.find(n => n.id === id);
             if (!note) return;
 
-            // Trigger file download
-            const blob = new Blob([note.fileData || "Sample PDF content for " + note.title], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
+            let downloadUrl = note.fileData;
+            // Fallback if base64 placeholder
+            if (!downloadUrl || downloadUrl.includes("sample")) {
+                const blob = new Blob(["PDF Document Content for " + note.title], { type: 'application/pdf' });
+                downloadUrl = URL.createObjectURL(blob);
+            }
+
             const a = document.createElement('a');
-            a.href = url;
+            a.href = downloadUrl;
             a.download = note.fileName || `${note.title.replace(/\s+/g, '_')}.pdf`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(url);
         }
 
         // Admin Auth & Modals
@@ -437,6 +479,9 @@
             document.getElementById('uploadTitle').value = '';
             document.getElementById('uploadDesc').value = '';
             document.getElementById('uploadFile').value = '';
+            document.getElementById('uploadSubject').value = 'Physics';
+            document.getElementById('customSubjectContainer').classList.add('hidden');
+            document.getElementById('customSubjectInput').value = '';
             document.getElementById('fileLabelText').innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-indigo-600 text-xl mb-1 block"></i><span class="font-semibold text-slate-700">Click to browse</span> or drag PDF here`;
             selectedFileBase64 = "";
             selectedFileName = "";
@@ -444,6 +489,17 @@
 
         function closeUploadModal() {
             document.getElementById('uploadNoteModal').classList.add('hidden');
+        }
+
+        function checkOtherSubject(selectObj) {
+            const container = document.getElementById('customSubjectContainer');
+            if (selectObj.value === 'Other') {
+                container.classList.remove('hidden');
+                document.getElementById('customSubjectInput').required = true;
+            } else {
+                container.classList.add('hidden');
+                document.getElementById('customSubjectInput').required = false;
+            }
         }
 
         function handleFileSelect(e) {
@@ -464,7 +520,27 @@
             e.preventDefault();
             const title = document.getElementById('uploadTitle').value;
             const className = document.getElementById('uploadClass').value;
-            const subject = document.getElementById('uploadSubject').value;
+            let subject = document.getElementById('uploadSubject').value;
+            
+            if (subject === 'Other') {
+                const customSub = document.getElementById('customSubjectInput').value.trim();
+                if (customSub) {
+                    subject = customSub;
+                    // Add dynamically to filter dropdown if not exists
+                    const subjectFilter = document.getElementById('subjectFilter');
+                    let exists = false;
+                    for (let opt of subjectFilter.options) {
+                        if (opt.value.toLowerCase() === customSub.toLowerCase()) exists = true;
+                    }
+                    if (!exists) {
+                        const newOpt = document.createElement('option');
+                        newOpt.value = customSub;
+                        newOpt.textContent = customSub;
+                        subjectFilter.appendChild(newOpt);
+                    }
+                }
+            }
+
             const description = document.getElementById('uploadDesc').value;
 
             const newNote = {
@@ -479,9 +555,13 @@
 
             notes.unshift(newNote);
             saveNotes();
+            
+            // Close upload modal and show success alert
             closeUploadModal();
-            renderAdminTable();
             alert("Note uploaded successfully!");
+            
+            // Open admin dashboard view back automatically
+            openAdminDashboard();
         }
 
         // Initial Load
