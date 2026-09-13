@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Firebase App & Firestore SDKs -->
+    <!-- Firebase & App Logic Script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -25,14 +25,205 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        window.db = db;
-        window.collection = collection;
-        window.getDocs = getDocs;
-        window.addDoc = addDoc;
-        window.deleteDoc = deleteDoc;
-        window.doc = doc;
+        window.notes = [];
+        let selectedFileBase64 = "";
+        let selectedFileName = "";
 
-        window.loadCloudNotes();
+        // Load Notes from Cloud
+        window.loadCloudNotes = async function() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "notes"));
+                window.notes = [];
+                querySnapshot.forEach((docSnap) => {
+                    window.notes.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                renderNotes(window.notes);
+            } catch (error) {
+                console.error("Error loading notes: ", error);
+            }
+        };
+
+        // Render Notes to Grid
+        function renderNotes(notesToDisplay) {
+            const grid = document.getElementById('notesGrid');
+            const countSpan = document.getElementById('notesCount');
+            if (!grid) return;
+            grid.innerHTML = '';
+            countSpan.textContent = notesToDisplay.length;
+
+            if (notesToDisplay.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-16 text-center bg-white rounded-3xl border border-slate-200"><h3 class="font-bold text-slate-800 text-lg">No notes found on cloud</h3></div>`;
+                return;
+            }
+
+            notesToDisplay.forEach(note => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start gap-2 mb-3">
+                            <span class="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-lg">${note.className}</span>
+                            <span class="bg-slate-100 text-slate-600 text-xs font-medium px-2.5 py-1 rounded-lg">${note.subject}</span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mb-2">${note.title}</h3>
+                        <p class="text-slate-600 text-xs leading-relaxed mb-4 line-clamp-3">${note.description || ''}</p>
+                    </div>
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <span class="text-xs text-slate-400 truncate max-w-[140px]"><i class="fa-solid fa-file-pdf text-red-500 mr-1"></i> ${note.fileName || 'document.pdf'}</span>
+                        <button onclick="downloadNote('${note.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold">Download</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+        window.renderNotes = renderNotes;
+
+        // Filter Function
+        window.filterNotes = function() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const classVal = document.getElementById('classFilter').value;
+            const subjectVal = document.getElementById('subjectFilter').value;
+
+            const filtered = window.notes.filter(note => {
+                const matchesQuery = note.title.toLowerCase().includes(query) || note.subject.toLowerCase().includes(query);
+                const matchesClass = classVal === "" || note.className === classVal;
+                const matchesSubject = subjectVal === "" || note.subject.toLowerCase() === subjectVal.toLowerCase();
+                return matchesQuery && matchesClass && matchesSubject;
+            });
+            renderNotes(filtered);
+        };
+
+        window.resetFilters = function() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('classFilter').value = '';
+            document.getElementById('subjectFilter').value = '';
+            renderNotes(window.notes);
+        };
+
+        // Download Note
+        window.downloadNote = function(id) {
+            const note = window.notes.find(n => n.id === id);
+            if (!note) return;
+            let downloadUrl = note.fileData;
+            if (!downloadUrl || downloadUrl.length < 100) {
+                const blob = new Blob([`Sample notes for ${note.title}`], { type: 'application/pdf' });
+                downloadUrl = URL.createObjectURL(blob);
+            }
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = note.fileName || 'document.pdf';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+
+        // Admin Auth
+        window.openAdminLogin = function() { document.getElementById('adminLoginModal').classList.remove('hidden'); };
+        window.closeAdminLogin = function() { document.getElementById('adminLoginModal').classList.add('hidden'); };
+
+        window.handleAdminLogin = function(e) {
+            e.preventDefault();
+            if (document.getElementById('adminUser').value.trim() === "notesmarket_1" && document.getElementById('adminPass').value.trim() === "notes market_2") {
+                closeAdminLogin();
+                openAdminDashboard();
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        };
+
+        window.openAdminDashboard = function() {
+            document.getElementById('adminDashboardModal').classList.remove('hidden');
+            renderAdminTable();
+        };
+
+        window.closeAdminDashboard = function() { 
+            document.getElementById('adminDashboardModal').classList.add('hidden'); 
+            window.loadCloudNotes(); 
+        };
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('adminNotesTableBody');
+            document.getElementById('adminTotalNotes').textContent = window.notes.length;
+            tbody.innerHTML = '';
+            if (window.notes.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-400 text-xs">No notes found.</td></tr>`;
+                return;
+            }
+            window.notes.forEach(note => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50";
+                tr.innerHTML = `
+                    <td class="p-4"><div class="font-bold text-slate-800">${note.title}</div><div class="text-xs text-slate-400">${note.subject}</div></td>
+                    <td class="p-4 text-slate-600">${note.className}</td>
+                    <td class="p-4 text-right"><button onclick="deleteCloudNote('${note.id}')" class="bg-red-50 text-red-600 p-2 rounded-xl text-xs"><i class="fa-solid fa-trash"></i></button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.deleteCloudNote = async function(id) {
+            if (confirm("Delete this note from cloud?")) {
+                try {
+                    await deleteDoc(doc(db, "notes", id));
+                    alert("Deleted successfully!");
+                    await window.loadCloudNotes();
+                    renderAdminTable();
+                } catch (err) {
+                    alert("Error deleting note.");
+                }
+            }
+        };
+
+        window.openUploadModal = function() { document.getElementById('uploadNoteModal').classList.remove('hidden'); };
+        window.closeUploadModal = function() { document.getElementById('uploadNoteModal').classList.add('hidden'); };
+
+        window.handleFileSelect = function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFileName = file.name;
+                const reader = new FileReader();
+                reader.onload = function(event) { 
+                    selectedFileBase64 = event.target.result; 
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.handleUploadNote = async function(e) {
+            e.preventDefault();
+            
+            // Check if file size is too big for Firestore (approx 800KB limit for safety)
+            if (selectedFileBase64 && selectedFileBase64.length > 900000) {
+                alert("Yeh PDF file bahut badi hai! Firestore database ki limit 1MB hai. Kripya choti size ki PDF file upload karein.");
+                return;
+            }
+
+            const newNote = {
+                title: document.getElementById('uploadTitle').value,
+                className: document.getElementById('uploadClass').value,
+                subject: document.getElementById('uploadSubject').value,
+                description: document.getElementById('uploadDesc').value,
+                fileData: selectedFileBase64 || "sample",
+                fileName: selectedFileName || "document.pdf",
+                createdAt: Date.now()
+            };
+
+            try {
+                await addDoc(collection(db, "notes"), newNote);
+                alert("Note uploaded & saved to Cloud successfully!");
+                closeUploadModal();
+                window.loadCloudNotes();
+                openAdminDashboard();
+            } catch (error) {
+                console.error(error);
+                alert("Failed to upload note to cloud. File size might be too large.");
+            }
+        };
+
+        // Initial Load on Page Open
+        window.addEventListener('DOMContentLoaded', () => {
+            window.loadCloudNotes();
+        });
     </script>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
@@ -219,188 +410,12 @@
                     <textarea id="uploadDesc" rows="2" placeholder="Brief overview..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></textarea>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Select PDF File</label>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Select PDF File (Under 1MB)</label>
                     <input type="file" id="uploadFile" accept=".pdf" required onchange="handleFileSelect(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                 </div>
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl text-sm shadow-lg">Publish to Cloud</button>
             </form>
         </div>
     </div>
-
-    <!-- JavaScript Application Logic -->
-    <script>
-        let notes = [];
-        let selectedFileBase64 = "";
-        let selectedFileName = "";
-
-        async function loadCloudNotes() {
-            try {
-                const querySnapshot = await window.getDocs(window.collection(window.db, "notes"));
-                notes = [];
-                querySnapshot.forEach((docSnap) => {
-                    notes.push({ id: docSnap.id, ...docSnap.data() });
-                });
-                renderNotes(notes);
-            } catch (error) {
-                console.error("Error loading notes: ", error);
-            }
-        }
-
-        function renderNotes(notesToDisplay) {
-            const grid = document.getElementById('notesGrid');
-            const countSpan = document.getElementById('notesCount');
-            grid.innerHTML = '';
-            countSpan.textContent = notesToDisplay.length;
-
-            if (notesToDisplay.length === 0) {
-                grid.innerHTML = `<div class="col-span-full py-16 text-center bg-white rounded-3xl border border-slate-200"><h3 class="font-bold text-slate-800 text-lg">No notes found on cloud</h3></div>`;
-                return;
-            }
-
-            notesToDisplay.forEach(note => {
-                const card = document.createElement('div');
-                card.className = "bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between";
-                card.innerHTML = `
-                    <div>
-                        <div class="flex justify-between items-start gap-2 mb-3">
-                            <span class="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-lg">${note.className}</span>
-                            <span class="bg-slate-100 text-slate-600 text-xs font-medium px-2.5 py-1 rounded-lg">${note.subject}</span>
-                        </div>
-                        <h3 class="font-bold text-slate-800 text-base mb-2">${note.title}</h3>
-                        <p class="text-slate-600 text-xs leading-relaxed mb-4 line-clamp-3">${note.description || ''}</p>
-                    </div>
-                    <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                        <span class="text-xs text-slate-400 truncate max-w-[140px]"><i class="fa-solid fa-file-pdf text-red-500 mr-1"></i> ${note.fileName || 'document.pdf'}</span>
-                        <button onclick="downloadNote('${note.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold">Download</button>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        function filterNotes() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const classVal = document.getElementById('classFilter').value;
-            const subjectVal = document.getElementById('subjectFilter').value;
-
-            const filtered = notes.filter(note => {
-                const matchesQuery = note.title.toLowerCase().includes(query) || note.subject.toLowerCase().includes(query);
-                const matchesClass = classVal === "" || note.className === classVal;
-                const matchesSubject = subjectVal === "" || note.subject.toLowerCase() === subjectVal.toLowerCase();
-                return matchesQuery && matchesClass && matchesSubject;
-            });
-            renderNotes(filtered);
-        }
-
-        function resetFilters() {
-            document.getElementById('searchInput').value = '';
-            document.getElementById('classFilter').value = '';
-            document.getElementById('subjectFilter').value = '';
-            renderNotes(notes);
-        }
-
-        function downloadNote(id) {
-            const note = notes.find(n => n.id === id);
-            if (!note) return;
-            let downloadUrl = note.fileData;
-            if (!downloadUrl || downloadUrl.length < 100) {
-                const blob = new Blob([`Sample notes for ${note.title}`], { type: 'application/pdf' });
-                downloadUrl = URL.createObjectURL(blob);
-            }
-            const a = document.createElement('a');
-            a.href = downloadUrl;
-            a.download = note.fileName || 'document.pdf';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
-        function openAdminLogin() { document.getElementById('adminLoginModal').classList.remove('hidden'); }
-        function closeAdminLogin() { document.getElementById('adminLoginModal').classList.add('hidden'); }
-
-        function handleAdminLogin(e) {
-            e.preventDefault();
-            if (document.getElementById('adminUser').value.trim() === "notesmarket_1" && document.getElementById('adminPass').value.trim() === "notes market_2") {
-                closeAdminLogin();
-                openAdminDashboard();
-            } else {
-                document.getElementById('loginError').classList.remove('hidden');
-            }
-        }
-
-        function openAdminDashboard() {
-            document.getElementById('adminDashboardModal').classList.remove('hidden');
-            renderAdminTable();
-        }
-        function closeAdminDashboard() { document.getElementById('adminDashboardModal').classList.add('hidden'); loadCloudNotes(); }
-
-        function renderAdminTable() {
-            const tbody = document.getElementById('adminNotesTableBody');
-            document.getElementById('adminTotalNotes').textContent = notes.length;
-            tbody.innerHTML = '';
-            if (notes.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-400 text-xs">No notes found.</td></tr>`;
-                return;
-            }
-            notes.forEach(note => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50";
-                tr.innerHTML = `
-                    <td class="p-4"><div class="font-bold text-slate-800">${note.title}</div><div class="text-xs text-slate-400">${note.subject}</div></td>
-                    <td class="p-4 text-slate-600">${note.className}</td>
-                    <td class="p-4 text-right"><button onclick="deleteCloudNote('${note.id}')" class="bg-red-50 text-red-600 p-2 rounded-xl text-xs"><i class="fa-solid fa-trash"></i></button></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        async function deleteCloudNote(id) {
-            if (confirm("Delete this note from cloud?")) {
-                try {
-                    await window.deleteDoc(window.doc(window.db, "notes", id));
-                    alert("Deleted successfully!");
-                    await loadCloudNotes();
-                    renderAdminTable();
-                } catch (err) {
-                    alert("Error deleting note.");
-                }
-            }
-        }
-
-        function openUploadModal() { document.getElementById('uploadNoteModal').classList.remove('hidden'); }
-        function closeUploadModal() { document.getElementById('uploadNoteModal').classList.add('hidden'); }
-
-        function handleFileSelect(e) {
-            const file = e.target.files[0];
-            if (file) {
-                selectedFileName = file.name;
-                const reader = new FileReader();
-                reader.onload = function(event) { selectedFileBase64 = event.target.result; };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        async function handleUploadNote(e) {
-            e.preventDefault();
-            const newNote = {
-                title: document.getElementById('uploadTitle').value,
-                className: document.getElementById('uploadClass').value,
-                subject: document.getElementById('uploadSubject').value,
-                description: document.getElementById('uploadDesc').value,
-                fileData: selectedFileBase64 || "sample",
-                fileName: selectedFileName || "document.pdf",
-                createdAt: Date.now()
-            };
-
-            try {
-                await window.addDoc(window.collection(window.db, "notes"), newNote);
-                alert("Note uploaded & saved to Cloud successfully!");
-                closeUploadModal();
-                openAdminDashboard();
-            } catch (error) {
-                alert("Failed to upload note to cloud.");
-            }
-        }
-    </script>
 </body>
 </html>
