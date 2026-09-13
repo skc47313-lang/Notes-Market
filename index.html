@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotesMarket - Student Study Notes Marketplace</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-full flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('marketplace')">
+                <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-md shadow-indigo-200 flex items-center justify-center">
+                    <i data-lucide="book-open" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">NotesMarket</span>
+                    <span class="hidden sm:inline-block ml-2 text-xs font-semibold uppercase tracking-wider bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">Student Hub</span>
+                </div>
+            </div>
+
+            <!-- Header Search (Quick Search) -->
+            <div class="hidden md:flex flex-1 max-w-md mx-8">
+                <div class="relative w-full">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                    </span>
+                    <input type="text" id="headerSearch" oninput="handleSearchInput(this.value)" placeholder="Search notes by title, subject, or class..." class="w-full pl-9 pr-4 py-2 bg-slate-100 border border-transparent rounded-xl text-sm focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all">
+                </div>
+            </div>
+
+            <!-- Right Actions & Admin Trigger -->
+            <div class="flex items-center space-x-3">
+                <button onclick="openStatsModal()" class="hidden sm:flex items-center space-x-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition-colors">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-600"></i>
+                    <span>Market Stats</span>
+                </button>
+                <button id="adminNavBtn" onclick="handleAdminAction()" class="flex items-center space-x-2 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl shadow-sm transition-all">
+                    <i data-lucide="shield" class="w-4 h-4 text-indigo-400"></i>
+                    <span id="adminNavBtnText">Admin Login</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Marketplace View -->
+        <div id="marketplaceView" class="space-y-6">
+            <!-- Hero Banner -->
+            <div class="relative bg-gradient-to-r from-indigo-900 via-indigo-800 to-violet-900 text-white rounded-3xl p-6 sm:p-10 overflow-hidden shadow-xl">
+                <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
+                    <i data-lucide="graduation-cap" class="w-96 h-96"></i>
+                </div>
+                <div class="relative z-10 max-w-2xl space-y-4">
+                    <span class="inline-flex items-center space-x-1.5 text-xs font-medium bg-indigo-500/30 text-indigo-200 px-3 py-1 rounded-full border border-indigo-400/20">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                        <span>Verified Student Notes & Study Guides</span>
+                    </span>
+                    <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight">Ace Your Exams with Top-Tier Study Notes</h1>
+                    <p class="text-sm sm:text-base text-indigo-200 leading-relaxed">Browse thousands of peer-reviewed notes organized by class and subject. Download PDFs instantly to start mastering your coursework.</p>
+                    
+                    <!-- Quick Stats Badges -->
+                    <div class="flex flex-wrap gap-4 pt-2">
+                        <div class="flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-xl text-xs font-medium">
+                            <i data-lucide="file-text" class="w-4 h-4 text-indigo-300"></i>
+                            <span id="heroNoteCount">0</span> Notes Available
+                        </div>
+                        <div class="flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-xl text-xs font-medium">
+                            <i data-lucide="download" class="w-4 h-4 text-emerald-300"></i>
+                            <span id="heroDownloadCount">0</span> Total Downloads
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters & Controls Bar -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row gap-4 items-center justify-between">
+                <!-- Class Tabs -->
+                <div class="flex items-center space-x-1 overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0 scrollbar-none" id="classTabsContainer">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Sorting & Subject Filter -->
+                <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
+                    <div class="relative">
+                        <select id="subjectFilter" onchange="filterNotes()" class="appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium rounded-xl px-3 py-2.5 pr-8 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                            <option value="all">All Subjects / Folders</option>
+                        </select>
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-slate-400">
+                            <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                        </span>
+                    </div>
+
+                    <div class="relative">
+                        <select id="sortFilter" onchange="filterNotes()" class="appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium rounded-xl px-3 py-2.5 pr-8 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                            <option value="recency">Sort by: Newest First</option>
+                            <option value="downloads">Sort by: Most Downloaded</option>
+                            <option value="rating">Sort by: Highest Rated</option>
+                        </select>
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-slate-400">
+                            <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes Grid Container -->
+            <div id="notesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Populated dynamically -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden text-center py-16 bg-white rounded-3xl border border-slate-200 p-8">
+                <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="folder-search" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900 mb-1">No study notes found</h3>
+                <p class="text-sm text-slate-500 max-w-sm mx-auto mb-6">We couldn't find any notes matching your search or filter criteria. Try adjusting your search query or selecting a different class.</p>
+                <button onclick="resetFilters()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all">Reset All Filters</button>
+            </div>
+        </div>
+
+        <div id="adminDashboardView" class="hidden space-y-6">
+            <!-- Admin Top Welcome Header -->
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center space-x-2 text-xs font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full w-max mb-2">
+                        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                        <span>Admin Control Center</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-900">Manage Notes Repository</h2>
+                    <p class="text-sm text-slate-500">Upload new PDF study materials, edit existing titles, or delete outdated files.</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="openUploadModal()" class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-semibold text-xs shadow-md shadow-indigo-200 transition-all">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>Upload New Note</span>
+                    </button>
+                    <button onclick="switchView('marketplace')" class="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all">
+                        <i data-lucide="external-link" class="w-4 h-4"></i>
+                        <span>View Marketplace</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Stats Overview Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                        <i data-lucide="file-stack" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-slate-500">Total Uploaded Notes</p>
+                        <h4 id="adminTotalNotes" class="text-xl font-bold text-slate-900">0</h4>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
+                        <i data-lucide="arrow-down-to-line" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-slate-500">Total System Downloads</p>
+                        <h4 id="adminTotalDownloads" class="text-xl font-bold text-slate-900">0</h4>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-violet-50 text-violet-600 rounded-2xl flex items-center justify-center">
+                        <i data-lucide="folder-kanban" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-slate-500">Active Categories</p>
+                        <h4 id="adminTotalCategories" class="text-xl font-bold text-slate-900">0</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Notes Management Table -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+                <div class="p-6 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="font-bold text-slate-900">All Uploaded Notes</h3>
+                        <p class="text-xs text-slate-500">Manage notes currently live on the marketplace.</p>
+                    </div>
+                    <div class="relative w-full sm:w-64">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                        </span>
+                        <input type="text" id="adminSearchInput" oninput="renderAdminTable()" placeholder="Filter notes..." class="w-full pl-9 pr-4 py-2 bg-slate-100 border border-transparent rounded-xl text-xs focus:bg-white focus:border-indigo-500 outline-none transition-all">
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                                <th class="p-4">Title & Description</th>
+                                <th class="p-4">Class</th>
+                                <th class="p-4">Subject / Folder</th>
+                                <th class="p-4">Size & Uploader</th>
+                                <th class="p-4">Downloads</th>
+                                <th class="p-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminNotesTableBody" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    
+    <!-- Admin Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-6 relative animate-in fade-in zoom-in duration-200">
+            <button onclick="closeLoginModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+            <div class="flex items-center space-x-3">
+                <div class="bg-slate-900 text-white p-3 rounded-2xl">
+                    <i data-lucide="shield-alert" class="w-6 h-6 text-indigo-400"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Admin Authentication</h3>
+                    <p class="text-xs text-slate-500">Enter your credentials to access the admin dashboard.</p>
+                </div>
+            </div>
+
+            <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">Username</label>
+                    <input type="text" id="loginUsername" required placeholder="notesmarket_1" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">Password</label>
+                    <input type="password" id="loginPassword" required placeholder="notes market_2" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all">
+                </div>
+                <div id="loginErrorMsg" class="hidden text-xs font-medium text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-100"></div>
+                <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-xl shadow-md transition-all">Sign In to Dashboard</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Upload Note Modal (Admin) -->
+    <div id="uploadModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-6 relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeUploadModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 text-white p-3 rounded-2xl shadow-md shadow-indigo-200">
+                    <i data-lucide="file-up" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 id="uploadModalTitle" class="text-lg font-bold text-slate-900">Upload New Study Note</h3>
+                    <p class="text-xs text-slate-500">Choose a PDF document and fill out the details.</p>
+                </div>
+            </div>
+
+            <form onsubmit="handleSaveNote(event)" class="space-y-4">
+                <input type="hidden" id="editNoteId">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">Note Title</label>
+                    <input type="text" id="noteTitle" required placeholder="e.g. Quantum Mechanics Comprehensive Guide" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 outline-none transition-all">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">Class / Grade</label>
+                        <select id="noteClass" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 outline-none transition-all cursor-pointer">
+                            <option value="Class 9">Class 9</option>
+                            <option value="Class 10">Class 10</option>
+                            <option value="Class 11">Class 11</option>
+                            <option value="Class 12" selected>Class 12</option>
+                            <option value="College">College</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">Section / Subject Folder</label>
+                        <input type="text" id="noteSubject" required placeholder="e.g. Physics, Mathematics" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 outline-none transition-all">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">Description & Key Topics</label>
+                    <textarea id="noteDescription" rows="3" required placeholder="Briefly describe what chapters or concepts this note covers..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 outline-none transition-all resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">PDF File (Native File Picker)</label>
+                    <div class="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:border-indigo-500 transition-colors bg-slate-50/50">
+                        <input type="file" id="noteFile" accept=".pdf" class="hidden" onchange="handleFileSelected(this)">
+                        <div id="fileUploadPrompt" class="cursor-pointer space-y-2" onclick="document.getElementById('noteFile').click()">
+                            <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto">
+                                <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                            </div>
+                            <p class="text-xs font-semibold text-slate-700">Click to browse your device for PDF</p>
+                            <p class="text-[11px] text-slate-400">Accepts .pdf up to 25MB</p>
+                        </div>
+                        <div id="fileSelectedDisplay" class="hidden items-center justify-between bg-indigo-50/80 p-3 rounded-xl border border-indigo-100">
+                            <div class="flex items-center space-x-2 truncate">
+                                <i data-lucide="file-check-2" class="w-5 h-5 text-indigo-600 shrink-0"></i>
+                                <span id="selectedFileName" class="text-xs font-semibold text-indigo-900 truncate"></span>
+                            </div>
+                            <button type="button" onclick="clearSelectedFile()" class="text-slate-400 hover:text-rose-600 text-xs font-medium">Change</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeUploadModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all">Cancel</button>
+                    <button type="submit" id="saveNoteBtn" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-md shadow-indigo-200 transition-all">Publish Note</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Note Preview Modal -->
+    <div id="previewModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-6 relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closePreviewModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+            <div class="flex items-start justify-between pr-8">
+                <div>
+                    <span id="previewModalClass" class="text-xs font-semibold bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full uppercase tracking-wider"></span>
+                    <h2 id="previewModalTitle" class="text-xl font-bold text-slate-900 mt-2"></h2>
+                    <p id="previewModalSubject" class="text-xs font-medium text-slate-500 mt-0.5"></p>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Note Overview & Topics</h4>
+                <p id="previewModalDesc" class="text-sm text-slate-600 leading-relaxed"></p>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+                    <span class="block text-[10px] uppercase font-semibold text-slate-400">File Size</span>
+                    <span id="previewModalSize" class="text-xs font-bold text-slate-800">2.4 MB</span>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+                    <span class="block text-[10px] uppercase font-semibold text-slate-400">Downloads</span>
+                    <span id="previewModalDownloads" class="text-xs font-bold text-slate-800">124</span>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+                    <span class="block text-[10px] uppercase font-semibold text-slate-400">Uploader</span>
+                    <span id="previewModalUploader" class="text-xs font-bold text-slate-800">Admin</span>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+                    <span class="block text-[10px] uppercase font-semibold text-slate-400">Rating</span>
+                    <span id="previewModalRating" class="text-xs font-bold text-amber-600 flex items-center justify-center space-x-1">
+                        <i data-lucide="star" class="w-3 h-3 fill-amber-500 text-amber-500"></i>
+                        <span id="previewModalRatingVal">4.8</span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3 pt-2">
+                <button onclick="closePreviewModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all">Close</button>
+                <button id="previewDownloadBtn" class="flex items-center space-x-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-md shadow-indigo-200 transition-all">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Download PDF Note</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Overview Modal (Student/General) -->
+    <div id="statsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-6 relative">
+            <button onclick="closeStatsModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+            <div class="flex items-center space-x-3">
+                <div class="bg-emerald-50 text-emerald-600 p-3 rounded-2xl">
+                    <i data-lucide="bar-chart-2" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Platform Statistics</h3>
+                    <p class="text-xs text-slate-500">Real-time metrics of NotesMarket.</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-xs font-medium text-slate-600">Total Notes in Marketplace</span>
+                    <span id="statModalTotalNotes" class="text-sm font-bold text-slate-900">0</span>
+                </div>
+                <div class="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-xs font-medium text-slate-600">Total PDF Downloads</span>
+                    <span id="statModalTotalDownloads" class="text-sm font-bold text-slate-900">0</span>
+                </div>
+                <div class="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-xs font-medium text-slate-600">Classes Covered</span>
+                    <span class="text-sm font-bold text-slate-900">Class 9 to College</span>
+                </div>
+            </div>
+
+            <button onclick="closeStatsModal()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all">Close</button>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <script>
+        // Sample realistic notes to pre-populate local storage on first load
+        const SAMPLE_NOTES = [
+            {
+                id: 'note-1',
+                title: 'Electrostatics & Capacitance Complete Revision Notes',
+                class: 'Class 12',
+                subject: 'Physics',
+                description: 'Comprehensive handwritten & typed notes covering Coulomb Law, Electric Field, Gauss Law, and Parallel Plate Capacitors with derivations.',
+                fileSize: '3.4 MB',
+                uploader: 'Prof. R. Sharma',
+                uploadDate: '2026-03-01',
+                rating: 4.9,
+                downloads: 342,
+                fileData: 'data:application/pdf;base64,JVBERi0xLjQKJcTl8uXrp/Og0M...',
+                fileName: 'Electrostatics_Class12_Physics.pdf'
+            },
+            {
+                id: 'note-2',
+                title: 'Calculus: Derivatives & Integration Master Guide',
+                class: 'Class 12',
+                subject: 'Mathematics',
+                description: 'Step-by-step formulas, shortcuts, and 100+ solved practice problems for board exams and competitive entrance prep.',
+                fileSize: '4.1 MB',
+                uploader: 'Ananya V.',
+                uploadDate: '2026-03-05',
+                rating: 4.8,
+                downloads: 512,
+                fileData: 'data:application/pdf;base64,JVBERi0xLjQKJcTl8uXrp/Og0M...',
+                fileName: 'Calculus_Master_Guide_Math.pdf'
+            },
+            {
+                id: 'note-3',
+                title: 'Organic Chemistry Reaction Mechanisms & Name Reactions',
+                class: 'Class 12',
+                subject: 'Chemistry',
+                description: 'Complete reaction flowcharts for Aldehydes, Ketones, Amines, and Haloalkanes. Essential for quick last-minute revision.',
+                fileSize: '2.8 MB',
+                uploader: 'Dr. M. Sen',
+                uploadDate: '2026-03-08',
+                rating: 4.95,
+                downloads: 689,
+                fileData: 'data:application/pdf;base64,JVBERi0xLjQKJcTl8uXrp/Og0M...',
+                fileName: 'Organic_Chemistry_Reactions.pdf'
+            },
+            {
+                id: 'note-4',
+                title: 'Data Structures & Algorithms in C++ Fundamentals',
+                class: 'College',
+                subject: 'Computer Science',
+                description: 'Arrays, Linked Lists, Stacks, Queues, Binary Trees, and Sorting algorithms with clean commented code snippets.',
+                fileSize: '5.2 MB',
+                uploader: 'TechEd Team',
+                uploadDate: '2026-02-20',
+                rating: 4.7,
+                downloads: 418,
+                fileData: 'data:application/pdf;base64,JVBERi0xLjQKJcTl8uXrp/Og0M...',
+                fileName: 'DSA_CPP_Fundamentals.pdf'
+            },
+            {
+                id: 'note-5',
+                title: 'Human Physiology & Plant Anatomy Handbook',
+                class: 'Class 11',
+                subject: 'Biology',
+                description: 'Diagram-based precise notes covering neural control, chemical coordination, and anatomical cross-sections.',
+                fileSize: '3.9 MB',
+                uploader: 'Pooja K.',
+                uploadDate: '2026-03-02',
+                rating: 4.6,
+                downloads: 275,
+                fileData: 'data:application/pdf;base64,JVBERi0xLjQKJcTl8uXrp/Og0M...',
+                fileName: 'Biology_Human_Physiology.pdf'
+            },
+            {
+                id: 'note-6',
+                title: 'Linear Algebra & Matrices Formula Booklet',
+                class: 'College',
+                subject: 'Mathematics',
+                description: 'Eigenvalues, Eigenvectors, Matrix inversion, and system of linear equations simplified for engineering undergrads.',
+                fileSize: '2.1 MB',
+                uploader: 'Prof. A. Roy',
+                uploadDate: '2026-02-28',
+                rating: 4.85,
+                downloads: 198,
+                fileData: 'data:application/pdf;base64,JVBERi0xLjQKJcTl8uXrp/Og0M...',
+                fileName: 'Linear_Algebra_Booklet.pdf'
+            }
+        ];
+
+        // Global State
+        let notes = [];
+        let currentClassFilter = 'All';
+        let isAdminLoggedIn = false;
+        let tempFileData = null;
+        let tempFileName = '';
+
+        // Initialize Application on Window Load
+        window.onload = function() {
+            initStorage();
+            lucide.createIcons();
+            renderClasses();
+            renderSubjectsDropdown();
+            filterNotes();
+            updateGlobalStats();
+        };
+
+        // Initialize localStorage with sample notes if empty
+        function initStorage() {
+            const stored = localStorage.getItem('notesmarket_notes');
+            if (!stored) {
+                notes = SAMPLE_NOTES;
+                localStorage.setItem('notesmarket_notes', JSON.stringify(notes));
+            } else {
+                try {
+                    notes = JSON.parse(stored);
+                } catch(e) {
+                    notes = SAMPLE_NOTES;
+                }
+            }
+            const adminStatus = localStorage.getItem('notesmarket_admin_logged');
+            if (adminStatus === 'true') {
+                isAdminLoggedIn = true;
+                updateAdminNavUI();
+            }
+        }
+
+        function saveNotesToStorage() {
+            localStorage.setItem('notesmarket_notes', JSON.stringify(notes));
+            updateGlobalStats();
+        }
+
+        // View Switcher (Marketplace vs Admin Dashboard)
+        function switchView(viewName) {
+            const marketView = document.getElementById('marketplaceView');
+            const adminView = document.getElementById('adminDashboardView');
+
+            if (viewName === 'marketplace') {
+                marketView.classList.remove('hidden');
+                adminView.classList.add('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (viewName === 'admin') {
+                if (!isAdminLoggedIn) {
+                    openLoginModal();
+                    return;
+                }
+                marketView.classList.add('hidden');
+                adminView.classList.remove('hidden');
+                renderAdminTable();
+                updateAdminDashboardStats();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            lucide.createIcons();
+        }
+
+        // Admin Auth Flow
+        function handleAdminAction() {
+            if (isAdminLoggedIn) {
+                switchView('admin');
+            } else {
+                openLoginModal();
+            }
+        }
+
+        function openLoginModal() {
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('loginErrorMsg').classList.add('hidden');
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.add('hidden');
+        }
+
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUsername').value.trim();
+            const p = document.getElementById('loginPassword').value.trim();
+            const errBox = document.getElementById('loginErrorMsg');
+
+            // Exact credentials check requested
+            if (u === 'notesmarket_1' && p === 'notes market_2') {
+                isAdminLoggedIn = true;
+                localStorage.setItem('notesmarket_admin_logged', 'true');
+                closeLoginModal();
+                updateAdminNavUI();
+                switchView('admin');
+                showToast('Successfully logged in as Admin!', 'success');
+            } else {
+                errBox.textContent = 'Invalid credentials. Please use username `notesmarket_1` and password `notes market_2`.';
+                errBox.classList.remove('hidden');
+            }
+        }
+
+        function updateAdminNavUI() {
+            const btnText = document.getElementById('adminNavBtnText');
+            if (isAdminLoggedIn) {
+                btnText.textContent = 'Admin Dashboard';
+            } else {
+                btnText.textContent = 'Admin Login';
+            }
+        }
+
+        // Render Class Tabs in Marketplace
+        function renderClasses() {
+            const container = document.getElementById('classTabsContainer');
+            const classes = ['All', 'Class 9', 'Class 10', 'Class 11', 'Class 12', 'College'];
+            
+            container.innerHTML = classes.map(cls => `
+                <button onclick="selectClassFilter('${cls}')" class="px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${currentClassFilter === cls ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}">
+                    ${cls === 'All' ? 'All Classes' : cls}
+                </button>
+            `).join('');
+        }
+
+        function selectClassFilter(cls) {
+            currentClassFilter = cls;
+            renderClasses();
+            filterNotes();
+        }
+
+        function renderSubjectsDropdown() {
+            const subjectSelect = document.getElementById('subjectFilter');
+            const subjects = [...new Set(notes.map(n => n.subject))].sort();
+            
+            let html = '<option value="all">All Subjects / Folders</option>';
+            subjects.forEach(sub => {
+                html += `<option value="${sub}">${sub}</option>`;
+            });
+            subjectSelect.innerHTML = html;
+        }
+
+        // Filtering & Searching Logic
+        function filterNotes() {
+            const searchQuery = document.getElementById('headerSearch').value.toLowerCase();
+            const subjectVal = document.getElementById('subjectFilter').value;
+            const sortVal = document.getElementById('sortFilter').value;
+
+            let filtered = notes.filter(note => {
+                const matchesClass = currentClassFilter === 'All' || note.class === currentClassFilter;
+                const matchesSubject = subjectVal === 'all' || note.subject === subjectVal;
+                const matchesSearch = note.title.toLowerCase().includes(searchQuery) || 
+                                      note.description.toLowerCase().includes(searchQuery) ||
+                                      note.subject.toLowerCase().includes(searchQuery);
+                return matchesClass && matchesSubject && matchesSearch;
+            });
+
+            // Sorting
+            if (sortVal === 'recency') {
+                filtered.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
+            } else if (sortVal === 'downloads') {
+                filtered.sort((a, b) => b.downloads - a.downloads);
+            } else if (sortVal === 'rating') {
+                filtered.sort((a, b) => b.rating - a.rating);
+            }
+
+            renderNotesGrid(filtered);
+        }
+
+        function handleSearchInput(val) {
+            filterNotes();
+        }
+
+        function resetFilters() {
+            currentClassFilter = 'All';
+            document.getElementById('headerSearch').value = '';
+            document.getElementById('subjectFilter').value = 'all';
+            document.getElementById('sortFilter').value = 'recency';
+            renderClasses();
+            filterNotes();
+        }
+
+        // Render Notes Grid Cards
+        function renderNotesGrid(notesToRender) {
+            const grid = document.getElementById('notesGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (notesToRender.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            grid.innerHTML = notesToRender.map(note => `
+                <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs hover:shadow-lg transition-all flex flex-col justify-between space-y-4 group">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full uppercase tracking-wider">${note.class}</span>
+                            <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">${note.subject}</span>
+                        </div>
+                        <h3 onclick="openPreviewModal('${note.id}')" class="font-bold text-slate-900 text-base group-hover:text-indigo-600 cursor-pointer transition-colors line-clamp-2">${note.title}</h3>
+                        <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">${note.description}</p>
+                    </div>
+
+                    <div class="space-y-4 pt-3 border-t border-slate-100">
+                        <div class="flex items-center justify-between text-xs text-slate-500">
+                            <div class="flex items-center space-x-1.5">
+                                <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i>
+                                <span class="truncate max-w-[120px]">${note.uploader}</span>
+                            </div>
+                            <div class="flex items-center space-x-1.5 font-medium text-slate-700">
+                                <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-slate-400"></i>
+                                <span>${note.fileSize}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2">
+                            <button onclick="openPreviewModal('${note.id}')" class="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all text-center">
+                                Preview
+                            </button>
+                            <button onclick="downloadNotePDF('${note.id}')" class="flex-1 flex items-center justify-center space-x-1.5 py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm shadow-indigo-200 transition-all">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                <span>Download PDF</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // PDF Download Simulation & Trigger
+        function downloadNotePDF(noteId) {
+            const note = notes.find(n => n.id === noteId);
+            if (!note) return;
+
+            note.downloads = (note.downloads || 0) + 1;
+            saveNotesToStorage();
+            updateGlobalStats();
+            if(!document.getElementById('adminDashboardView').classList.contains('hidden')) {
+                renderAdminTable();
+            }
+
+            // Create blob and trigger download
+            const samplePdfContent = `%PDF-1.4\n1 0 obj\n<< /Title (${note.title}) /Author (${note.uploader}) >>\nendobj\nstream\nNotesMarket Document Content for ${note.title}\nClass: ${note.class} | Subject: ${note.subject}\nendstream\n%%EOF`;
+            const blob = new Blob([samplePdfContent], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = note.fileName || `${note.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showToast(`Successfully downloaded "${note.title}"`, 'success');
+        }
+
+        // Preview Modal Logic
+        function openPreviewModal(noteId) {
+            const note = notes.find(n => n.id === noteId);
+            if (!note) return;
+
+            document.getElementById('previewModalClass').textContent = `${note.class} • ${note.subject}`;
+            document.getElementById('previewModalTitle').textContent = note.title;
+            document.getElementById('previewModalSubject').textContent = `Folder / Category: ${note.subject}`;
+            document.getElementById('previewModalDesc').textContent = note.description;
+            document.getElementById('previewModalSize').textContent = note.fileSize;
+            document.getElementById('previewModalDownloads').textContent = note.downloads;
+            document.getElementById('previewModalUploader').textContent = note.uploader;
+            document.getElementById('previewModalRatingVal').textContent = note.rating;
+            
+            document.getElementById('previewDownloadBtn').onclick = function() {
+                downloadNotePDF(note.id);
+                closePreviewModal();
+            };
+
+            document.getElementById('previewModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closePreviewModal() {
+            document.getElementById('previewModal').classList.add('hidden');
+        }
+
+        // Admin Dashboard Table & Management
+        function renderAdminTable() {
+            const tbody = document.getElementById('adminNotesTableBody');
+            const search = document.getElementById('adminSearchInput').value.toLowerCase();
+
+            let filtered = notes.filter(n => n.title.toLowerCase().includes(search) || n.subject.toLowerCase().includes(search));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">No notes found in management repository.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(note => `
+                <tr class="hover:bg-slate-50/80 transition-colors">
+                    <td class="p-4 max-w-xs">
+                        <p class="font-bold text-slate-900 truncate">${note.title}</p>
+                        <p class="text-[11px] text-slate-500 truncate">${note.description}</p>
+                    </td>
+                    <td class="p-4 font-medium text-slate-700">${note.class}</td>
+                    <td class="p-4"><span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-lg text-[11px] font-semibold">${note.subject}</span></td>
+                    <td class="p-4 text-slate-600">
+                        <span class="block font-medium">${note.fileSize}</span>
+                        <span class="text-[10px] text-slate-400">By ${note.uploader}</span>
+                    </td>
+                    <td class="p-4 font-bold text-slate-900">${note.downloads}</td>
+                    <td class="p-4 text-right space-x-2">
+                        <button onclick="openEditModal('${note.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold transition-colors">Edit</button>
+                        <button onclick="deleteNote('${note.id}')" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg font-semibold transition-colors">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function updateAdminDashboardStats() {
+            document.getElementById('adminTotalNotes').textContent = notes.length;
+            const totalDls = notes.reduce((sum, n) => sum + (n.downloads || 0), 0);
+            document.getElementById('adminTotalDownloads').textContent = totalDls;
+            const uniqueCats = new Set(notes.map(n => n.subject)).size;
+            document.getElementById('adminTotalCategories').textContent = uniqueCats;
+        }
+
+        // Upload / Edit Note Modal
+        function openUploadModal() {
+            document.getElementById('uploadModalTitle').textContent = 'Upload New Study Note';
+            document.getElementById('editNoteId').value = '';
+            document.getElementById('noteTitle').value = '';
+            document.getElementById('noteClass').value = 'Class 12';
+            document.getElementById('noteSubject').value = '';
+            document.getElementById('noteDescription').value = '';
+            clearSelectedFile();
+            document.getElementById('uploadModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function openEditModal(noteId) {
+            const note = notes.find(n => n.id === noteId);
+            if (!note) return;
+
+            document.getElementById('uploadModalTitle').textContent = 'Edit Note Details';
+            document.getElementById('editNoteId').value = note.id;
+            document.getElementById('noteTitle').value = note.title;
+            document.getElementById('noteClass').value = note.class;
+            document.getElementById('noteSubject').value = note.subject;
+            document.getElementById('noteDescription').value = note.description;
+            
+            tempFileName = note.fileName || 'document.pdf';
+            tempFileData = note.fileData || '';
+            document.getElementById('fileUploadPrompt').classList.add('hidden');
+            const display = document.getElementById('fileSelectedDisplay');
+            display.classList.remove('hidden');
+            display.classList.add('flex');
+            document.getElementById('selectedFileName').textContent = tempFileName;
+
+            document.getElementById('uploadModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.add('hidden');
+        }
+
+        function handleFileSelected(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                tempFileName = file.name;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    tempFileData = e.target.result;
+                    document.getElementById('fileUploadPrompt').classList.add('hidden');
+                    const display = document.getElementById('fileSelectedDisplay');
+                    display.classList.remove('hidden');
+                    display.classList.add('flex');
+                    document.getElementById('selectedFileName').textContent = `${tempFileName} (${(file.size / (1024*1024)).toFixed(1)} MB)`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearSelectedFile() {
+            tempFileData = null;
+            tempFileName = '';
+            document.getElementById('noteFile').value = '';
+            document.getElementById('fileUploadPrompt').classList.remove('hidden');
+            const display = document.getElementById('fileSelectedDisplay');
+            display.classList.remove('hidden');
+            display.classList.add('hidden');
+        }
+
+        function handleSaveNote(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editNoteId').value;
+            const title = document.getElementById('noteTitle').value.trim();
+            const cls = document.getElementById('noteClass').value;
+            const subject = document.getElementById('noteSubject').value.trim();
+            const description = document.getElementById('noteDescription').value.trim();
+
+            if (!tempFileName) {
+                showToast('Please select a PDF file using the file picker.', 'error');
+                return;
+            }
+
+            if (editId) {
+                // Edit existing
+                const idx = notes.findIndex(n => n.id === editId);
+                if (idx !== -1) {
+                    notes[idx].title = title;
+                    notes[idx].class = cls;
+                    notes[idx].subject = subject;
+                    notes[idx].description = description;
+                    notes[idx].fileName = tempFileName;
+                    if (tempFileData) notes[idx].fileData = tempFileData;
+                }
+                showToast('Note successfully updated!', 'success');
+            } else {
+                // Create new note
+                const newNote = {
+                    id: 'note-' + Date.now(),
+                    title: title,
+                    class: cls,
+                    subject: subject,
+                    description: description,
+                    fileSize: '2.5 MB',
+                    uploader: 'Admin (Verified)',
+                    uploadDate: new Date().toISOString().split('T')[0],
+                    rating: 5.0,
+                    downloads: 0,
+                    fileName: tempFileName,
+                    fileData: tempFileData || 'data:application/pdf;base64,JVBERi...'
+                };
+                notes.unshift(newNote);
+                showToast('New note published to marketplace!', 'success');
+            }
+
+            saveNotesToStorage();
+            renderSubjectsDropdown();
+            filterNotes();
+            renderAdminTable();
+            updateAdminDashboardStats();
+            closeUploadModal();
+        }
+
+        function deleteNote(noteId) {
+            if (confirm('Are you sure you want to delete this study note from the marketplace?')) {
+                notes = notes.filter(n => n.id !== noteId);
+                saveNotesToStorage();
+                renderSubjectsDropdown();
+                filterNotes();
+                renderAdminTable();
+                updateAdminDashboardStats();
+                showToast('Note deleted successfully.', 'success');
+            }
+        }
+
+        // Global Stats Modals & Updates
+        function updateGlobalStats() {
+            document.getElementById('heroNoteCount').textContent = notes.length;
+            const totalDls = notes.reduce((sum, n) => sum + (n.downloads || 0), 0);
+            document.getElementById('heroDownloadCount').textContent = totalDls;
+        }
+
+        function openStatsModal() {
+            document.getElementById('statModalTotalNotes').textContent = notes.length;
+            const totalDls = notes.reduce((sum, n) => sum + (n.downloads || 0), 0);
+            document.getElementById('statModalTotalDownloads').textContent = totalDls;
+            document.getElementById('statsModal').classList.remove('hidden');
+        }
+
+        function closeStatsModal() {
+            document.getElementById('statsModal').classList.add('hidden');
+        }
+
+        // Toast Notification Helper
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `flex items-center space-x-2 px-4 py-3 rounded-2xl text-xs font-semibold shadow-lg text-white pointer-events-auto transition-all animate-in fade-in slide-in-from-bottom-5 ${type === 'success' ? 'bg-slate-900 border border-slate-800' : 'bg-rose-600'}`;
+            
+            let iconName = type === 'success' ? 'check-circle-2' : 'alert-circle';
+            toast.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 text-indigo-400"></i><span>${message}</span>`;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
