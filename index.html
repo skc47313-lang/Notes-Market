@@ -6,6 +6,34 @@
     <title>Notes Market - Student Notes Marketplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase App & Firestore SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyChG_jBGcieowmVVKHdwaiI1zvOwvvPag0",
+            authDomain: "notes-market-d309b.firebaseapp.com",
+            projectId: "notes-market-d309b",
+            storageBucket: "notes-market-d309b.firebasestorage.app",
+            messagingSenderId: "661796727875",
+            appId: "1:661796727875:web:f19697629ed298546138f6",
+            measurementId: "G-9YM7BT3BM2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.db = db;
+        window.collection = collection;
+        window.getDocs = getDocs;
+        window.addDoc = addDoc;
+        window.deleteDoc = deleteDoc;
+        window.doc = doc;
+
+        window.loadCloudNotes();
+    </script>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
 
@@ -36,16 +64,15 @@
         
         <!-- Hero Search Section -->
         <div class="bg-gradient-to-r from-indigo-600 to-violet-700 rounded-3xl p-8 md:p-12 text-white mb-10 shadow-xl relative overflow-hidden">
-            <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
             <div class="max-w-2xl relative z-10">
-                <span class="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider mb-3 inline-block">Free Student Resources</span>
+                <span class="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider mb-3 inline-block">Cloud Synced Notes</span>
                 <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">Find & Download Verified Study Notes Instantly</h2>
-                <p class="text-indigo-100 text-sm md:text-base mb-6 leading-relaxed">Browse organized notes by class, subject, and chapter uploaded by top educators and students.</p>
+                <p class="text-indigo-100 text-sm md:text-base mb-6 leading-relaxed">Browse organized notes stored safely on the cloud database.</p>
                 
                 <div class="flex flex-col sm:flex-row gap-3">
                     <div class="relative flex-grow">
                         <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-400"></i>
-                        <input type="text" id="searchInput" oninput="filterNotes()" placeholder="Search by title, subject, or class..." class="w-full pl-11 pr-4 py-3 rounded-xl text-slate-800 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-white/50 text-sm shadow-inner">
+                        <input type="text" id="searchInput" oninput="filterNotes()" placeholder="Search by title, subject, or class..." class="w-full pl-11 pr-4 py-3 rounded-xl text-slate-800 bg-white placeholder-slate-400 focus:outline-none text-sm shadow-inner">
                     </div>
                 </div>
             </div>
@@ -58,7 +85,7 @@
                     <i class="fa-solid fa-filter text-indigo-600"></i>
                     <span>Filters:</span>
                 </div>
-                <select id="classFilter" onchange="filterNotes()" class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <select id="classFilter" onchange="filterNotes()" class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2">
                     <option value="">All Classes</option>
                     <option value="Class 9">Class 9</option>
                     <option value="Class 10">Class 10</option>
@@ -67,17 +94,14 @@
                     <option value="College">College</option>
                 </select>
 
-                <select id="subjectFilter" onchange="filterNotes()" class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <select id="subjectFilter" onchange="filterNotes()" class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2">
                     <option value="">All Subjects</option>
                     <option value="Physics">Physics</option>
                     <option value="Mathematics">Mathematics</option>
                     <option value="Chemistry">Chemistry</option>
-                    <option value="Computer Science">Computer Science</option>
                     <option value="Biology">Biology</option>
                     <option value="Science">Science</option>
                     <option value="English">English</option>
-                    <option value="Math">Math</option>
-                    <option value="Maithili">Maithili</option>
                     <option value="Hindi">Hindi</option>
                     <option value="SST">SST</option>
                 </select>
@@ -97,36 +121,29 @@
 
     <!-- Footer -->
     <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
-        <p>&copy; 2026 Notes Market. Built for students & educators.</p>
+        <p>&copy; 2026 Notes Market. Powered by Cloud Database.</p>
     </footer>
 
     <!-- Admin Login Modal -->
     <div id="adminLoginModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl relative border border-slate-100 animate-in fade-in zoom-in duration-200">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl relative border border-slate-100">
             <button onclick="closeAdminLogin()" class="absolute right-5 top-5 text-slate-400 hover:text-slate-600 transition">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
             <div class="text-center mb-6">
-                <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner">
-                    <i class="fa-solid fa-shield-halved text-xl"></i>
-                </div>
                 <h3 class="text-xl font-bold text-slate-800">Admin Authentication</h3>
-                <p class="text-xs text-slate-500 mt-1">Enter your secure credentials to access dashboard</p>
             </div>
-
             <form onsubmit="handleAdminLogin(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Username</label>
-                    <input type="text" id="adminUser" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter username">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Username</label>
+                    <input type="text" id="adminUser" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Password</label>
-                    <input type="password" id="adminPass" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter password">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Password</label>
+                    <input type="password" id="adminPass" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
                 </div>
-                <p id="loginError" class="text-xs text-red-500 font-medium hidden">Invalid credentials. Please try again.</p>
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-indigo-200 transition text-sm">
-                    Login to Dashboard
-                </button>
+                <p id="loginError" class="text-xs text-red-500 font-medium hidden">Invalid credentials.</p>
+                <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl shadow-lg text-sm">Login</button>
             </form>
         </div>
     </div>
@@ -135,48 +152,28 @@
     <div id="adminDashboardModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex flex-col justify-end sm:items-center sm:justify-center p-0 sm:p-4">
         <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-100">
             <div class="p-6 bg-slate-900 text-white flex justify-between items-center">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center font-bold">A</div>
-                    <div>
-                        <h3 class="font-bold text-lg">Admin Management Dashboard</h3>
-                        <p class="text-xs text-slate-400">Manage repository notes and upload new PDFs</p>
-                    </div>
-                </div>
-                <button onclick="closeAdminDashboard()" class="text-slate-400 hover:text-white transition p-2">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
+                <h3 class="font-bold text-lg">Cloud Admin Dashboard</h3>
+                <button onclick="closeAdminDashboard()" class="text-slate-400 hover:text-white transition p-2"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-
             <div class="p-6 overflow-y-auto flex-grow bg-slate-50 space-y-6">
-                <!-- Action Bar -->
-                <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200">
                     <div>
-                        <h4 class="font-bold text-slate-800 text-sm">Uploaded Notes Repository</h4>
-                        <p class="text-xs text-slate-500">Total active notes: <span id="adminTotalNotes">0</span></p>
+                        <h4 class="font-bold text-slate-800 text-sm">Cloud Notes Repository</h4>
+                        <p class="text-xs text-slate-500">Total notes: <span id="adminTotalNotes">0</span></p>
                     </div>
-                    <button onclick="openUploadModal()" class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-indigo-100 transition">
-                        <i class="fa-solid fa-plus text-xs"></i>
-                        <span>Upload New Note</span>
-                    </button>
+                    <button onclick="openUploadModal()" class="bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md"><i class="fa-solid fa-plus text-xs mr-1"></i> Upload Note</button>
                 </div>
-
-                <!-- Notes Management Table -->
                 <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-sm">
-                            <thead>
-                                <tr class="bg-slate-100 text-slate-600 font-semibold text-xs uppercase tracking-wider border-b border-slate-200">
-                                    <th class="p-4">Title & Subject</th>
-                                    <th class="p-4">Class</th>
-                                    <th class="p-4">Folder</th>
-                                    <th class="p-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adminNotesTableBody" class="divide-y divide-slate-100">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 font-semibold text-xs uppercase border-b">
+                                <th class="p-4">Title & Subject</th>
+                                <th class="p-4">Class</th>
+                                <th class="p-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminNotesTableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -185,17 +182,13 @@
     <!-- Upload Note Modal -->
     <div id="uploadNoteModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl relative border border-slate-100">
-            <button onclick="closeUploadModal()" class="absolute right-5 top-5 text-slate-400 hover:text-slate-600 transition">
-                <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
-            <h3 class="text-xl font-bold text-slate-800 mb-1">Upload PDF Note</h3>
-            <p class="text-xs text-slate-500 mb-6">Fill in information and attach your PDF file.</p>
-
+            <button onclick="closeUploadModal()" class="absolute right-5 top-5 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 class="text-xl font-bold text-slate-800 mb-4">Upload PDF Note to Cloud</h3>
             <form onsubmit="handleUploadNote(event)" class="space-y-4">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Class</label>
-                        <select id="uploadClass" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Class</label>
+                        <select id="uploadClass" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
                             <option value="Class 10">Class 10</option>
                             <option value="Class 9">Class 9</option>
                             <option value="Class 11">Class 11</option>
@@ -204,93 +197,53 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Subject / Folder</label>
-                        <select id="uploadSubject" required onchange="checkOtherSubject(this)" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Subject</label>
+                        <select id="uploadSubject" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
                             <option value="Physics">Physics</option>
                             <option value="Mathematics">Mathematics</option>
                             <option value="Chemistry">Chemistry</option>
-                            <option value="Computer Science">Computer Science</option>
                             <option value="Biology">Biology</option>
                             <option value="Science">Science</option>
                             <option value="English">English</option>
-                            <option value="Math">Math</option>
-                            <option value="Maithili">Maithili</option>
                             <option value="Hindi">Hindi</option>
                             <option value="SST">SST</option>
-                            <option value="Other">Other (Custom Subject)</option>
                         </select>
                     </div>
                 </div>
-
-                <!-- Custom Subject Input Box -->
-                <div id="customSubjectContainer" class="hidden">
-                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Enter Custom Subject Name</label>
-                    <input type="text" id="customSubjectInput" placeholder="e.g. Economics, Sanskrit..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Note Title</label>
-                    <input type="text" id="uploadTitle" required placeholder="e.g., Nationalism in India" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Note Title</label>
+                    <input type="text" id="uploadTitle" required placeholder="e.g., Chapter 1 Notes" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
                 </div>
-
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Description</label>
-                    <textarea id="uploadDesc" rows="2" placeholder="Brief overview of the notes chapter..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Description</label>
+                    <textarea id="uploadDesc" rows="2" placeholder="Brief overview..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></textarea>
                 </div>
-
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Select PDF File</label>
-                    <div class="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl p-4 text-center cursor-pointer bg-slate-50 transition relative">
-                        <input type="file" id="uploadFile" accept=".pdf" required onchange="handleFileSelect(event)" class="absolute inset-0 opacity-0 cursor-pointer">
-                        <div id="fileLabelText" class="text-xs text-slate-500">
-                            <i class="fa-solid fa-cloud-arrow-up text-indigo-600 text-xl mb-1 block"></i>
-                            <span class="font-semibold text-slate-700">Click to browse</span> or drag PDF here
-                        </div>
-                    </div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Select PDF File</label>
+                    <input type="file" id="uploadFile" accept=".pdf" required onchange="handleFileSelect(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                 </div>
-
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-indigo-200 transition text-sm">
-                    Publish Note
-                </button>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl text-sm shadow-lg">Publish to Cloud</button>
             </form>
         </div>
     </div>
 
-    <!-- JavaScript Logic -->
+    <!-- JavaScript Application Logic -->
     <script>
-        const defaultNotes = [
-            {
-                id: 1,
-                title: "Nationalism in India (SST Notes)",
-                subject: "SST",
-                className: "Class 10",
-                description: "Comprehensive notes covering the First World War, Khilafat, Non-Cooperation, and Civil Disobedience movements.",
-                fileName: "Class10_SST_Nationalism.pdf"
-            },
-            {
-                id: 2,
-                title: "Light: Reflection and Refraction",
-                subject: "Physics",
-                className: "Class 10",
-                description: "Complete chapter review with ray diagrams, mirror formulas, and numerical problems.",
-                fileName: "Class10_Physics_Light.pdf"
-            },
-            {
-                id: 3,
-                title: "Hindi Vyakaran & Rachna",
-                subject: "Hindi",
-                className: "Class 10",
-                description: "Important grammar rules, pad-parichay, vachya, alankar, and nibandh collection.",
-                fileName: "Class10_Hindi_Vyakaran.pdf"
-            }
-        ];
-
-        let notes = JSON.parse(localStorage.getItem('notesMarket_notes')) || defaultNotes;
+        let notes = [];
         let selectedFileBase64 = "";
         let selectedFileName = "";
 
-        function saveNotes() {
-            localStorage.setItem('notesMarket_notes', JSON.stringify(notes));
+        async function loadCloudNotes() {
+            try {
+                const querySnapshot = await window.getDocs(window.collection(window.db, "notes"));
+                notes = [];
+                querySnapshot.forEach((docSnap) => {
+                    notes.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                renderNotes(notes);
+            } catch (error) {
+                console.error("Error loading notes: ", error);
+            }
         }
 
         function renderNotes(notesToDisplay) {
@@ -300,15 +253,7 @@
             countSpan.textContent = notesToDisplay.length;
 
             if (notesToDisplay.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-span-full py-16 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
-                        <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
-                            <i class="fa-solid fa-folder-open"></i>
-                        </div>
-                        <h3 class="font-bold text-slate-800 text-lg">No notes found</h3>
-                        <p class="text-xs text-slate-500 mt-1">Try adjusting your filters or search query.</p>
-                    </div>
-                `;
+                grid.innerHTML = `<div class="col-span-full py-16 text-center bg-white rounded-3xl border border-slate-200"><h3 class="font-bold text-slate-800 text-lg">No notes found on cloud</h3></div>`;
                 return;
             }
 
@@ -322,14 +267,11 @@
                             <span class="bg-slate-100 text-slate-600 text-xs font-medium px-2.5 py-1 rounded-lg">${note.subject}</span>
                         </div>
                         <h3 class="font-bold text-slate-800 text-base mb-2">${note.title}</h3>
-                        <p class="text-slate-600 text-xs leading-relaxed mb-4 line-clamp-3">${note.description || 'No description provided.'}</p>
+                        <p class="text-slate-600 text-xs leading-relaxed mb-4 line-clamp-3">${note.description || ''}</p>
                     </div>
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                        <span class="text-xs text-slate-400 font-medium truncate max-w-[140px]"><i class="fa-solid fa-file-pdf text-red-500 mr-1"></i> ${note.fileName || 'document.pdf'}</span>
-                        <button onclick="downloadNote(${note.id})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow-sm transition">
-                            <i class="fa-solid fa-download text-xs"></i>
-                            <span>Download PDF</span>
-                        </button>
+                        <span class="text-xs text-slate-400 truncate max-w-[140px]"><i class="fa-solid fa-file-pdf text-red-500 mr-1"></i> ${note.fileName || 'document.pdf'}</span>
+                        <button onclick="downloadNote('${note.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold">Download</button>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -342,12 +284,11 @@
             const subjectVal = document.getElementById('subjectFilter').value;
 
             const filtered = notes.filter(note => {
-                const matchesQuery = note.title.toLowerCase().includes(query) || note.subject.toLowerCase().includes(query) || note.className.toLowerCase().includes(query);
+                const matchesQuery = note.title.toLowerCase().includes(query) || note.subject.toLowerCase().includes(query);
                 const matchesClass = classVal === "" || note.className === classVal;
                 const matchesSubject = subjectVal === "" || note.subject.toLowerCase() === subjectVal.toLowerCase();
                 return matchesQuery && matchesClass && matchesSubject;
             });
-
             renderNotes(filtered);
         }
 
@@ -358,43 +299,28 @@
             renderNotes(notes);
         }
 
-        // Reliable Direct PDF Download
         function downloadNote(id) {
             const note = notes.find(n => n.id === id);
             if (!note) return;
-
             let downloadUrl = note.fileData;
-            if (!downloadUrl || downloadUrl.includes("sample") || downloadUrl.length < 100) {
-                const blob = new Blob([`Sample study notes content for: ${note.title}\nSubject: ${note.subject}\nClass: ${note.className}`], { type: 'application/pdf' });
+            if (!downloadUrl || downloadUrl.length < 100) {
+                const blob = new Blob([`Sample notes for ${note.title}`], { type: 'application/pdf' });
                 downloadUrl = URL.createObjectURL(blob);
             }
-
             const a = document.createElement('a');
             a.href = downloadUrl;
-            a.download = note.fileName || `${note.title.replace(/\s+/g, '_')}.pdf`;
+            a.download = note.fileName || 'document.pdf';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
         }
 
-        // Admin Auth & Modals
-        function openAdminLogin() {
-            document.getElementById('adminLoginModal').classList.remove('hidden');
-            document.getElementById('loginError').classList.add('hidden');
-            document.getElementById('adminUser').value = '';
-            document.getElementById('adminPass').value = '';
-        }
-
-        function closeAdminLogin() {
-            document.getElementById('adminLoginModal').classList.add('hidden');
-        }
+        function openAdminLogin() { document.getElementById('adminLoginModal').classList.remove('hidden'); }
+        function closeAdminLogin() { document.getElementById('adminLoginModal').classList.add('hidden'); }
 
         function handleAdminLogin(e) {
             e.preventDefault();
-            const user = document.getElementById('adminUser').value.trim();
-            const pass = document.getElementById('adminPass').value.trim();
-
-            if (user === "notesmarket_1" && pass === "notes market_2") {
+            if (document.getElementById('adminUser').value.trim() === "notesmarket_1" && document.getElementById('adminPass').value.trim() === "notes market_2") {
                 closeAdminLogin();
                 openAdminDashboard();
             } else {
@@ -406,141 +332,75 @@
             document.getElementById('adminDashboardModal').classList.remove('hidden');
             renderAdminTable();
         }
-
-        function closeAdminDashboard() {
-            document.getElementById('adminDashboardModal').classList.add('hidden');
-            renderNotes(notes);
-        }
+        function closeAdminDashboard() { document.getElementById('adminDashboardModal').classList.add('hidden'); loadCloudNotes(); }
 
         function renderAdminTable() {
             const tbody = document.getElementById('adminNotesTableBody');
             document.getElementById('adminTotalNotes').textContent = notes.length;
             tbody.innerHTML = '';
-
             if (notes.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400 text-xs">No notes uploaded yet.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-400 text-xs">No notes found.</td></tr>`;
                 return;
             }
-
             notes.forEach(note => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition";
+                tr.className = "hover:bg-slate-50";
                 tr.innerHTML = `
-                    <td class="p-4">
-                        <div class="font-bold text-slate-800">${note.title}</div>
-                        <div class="text-xs text-slate-400">${note.subject}</div>
-                    </td>
+                    <td class="p-4"><div class="font-bold text-slate-800">${note.title}</div><div class="text-xs text-slate-400">${note.subject}</div></td>
                     <td class="p-4 text-slate-600">${note.className}</td>
-                    <td class="p-4 text-slate-600"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${note.fileName || 'PDF'}</span></td>
-                    <td class="p-4 text-right">
-                        <button onclick="deleteNote(${note.id})" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded-xl text-xs transition" title="Delete note">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </td>
+                    <td class="p-4 text-right"><button onclick="deleteCloudNote('${note.id}')" class="bg-red-50 text-red-600 p-2 rounded-xl text-xs"><i class="fa-solid fa-trash"></i></button></td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        function deleteNote(id) {
-            if (confirm("Are you sure you want to delete this note?")) {
-                notes = notes.filter(n => n.id !== id);
-                saveNotes();
-                renderAdminTable();
+        async function deleteCloudNote(id) {
+            if (confirm("Delete this note from cloud?")) {
+                try {
+                    await window.deleteDoc(window.doc(window.db, "notes", id));
+                    alert("Deleted successfully!");
+                    await loadCloudNotes();
+                    renderAdminTable();
+                } catch (err) {
+                    alert("Error deleting note.");
+                }
             }
         }
 
-        function openUploadModal() {
-            document.getElementById('uploadNoteModal').classList.remove('hidden');
-            document.getElementById('uploadTitle').value = '';
-            document.getElementById('uploadDesc').value = '';
-            document.getElementById('uploadFile').value = '';
-            document.getElementById('uploadSubject').value = 'Physics';
-            document.getElementById('customSubjectContainer').classList.add('hidden');
-            document.getElementById('customSubjectInput').value = '';
-            document.getElementById('fileLabelText').innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-indigo-600 text-xl mb-1 block"></i><span class="font-semibold text-slate-700">Click to browse</span> or drag PDF here`;
-            selectedFileBase64 = "";
-            selectedFileName = "";
-        }
-
-        function closeUploadModal() {
-            document.getElementById('uploadNoteModal').classList.add('hidden');
-        }
-
-        function checkOtherSubject(selectObj) {
-            const container = document.getElementById('customSubjectContainer');
-            if (selectObj.value === 'Other') {
-                container.classList.remove('hidden');
-                document.getElementById('customSubjectInput').required = true;
-            } else {
-                container.classList.add('hidden');
-                document.getElementById('customSubjectInput').required = false;
-            }
-        }
+        function openUploadModal() { document.getElementById('uploadNoteModal').classList.remove('hidden'); }
+        function closeUploadModal() { document.getElementById('uploadNoteModal').classList.add('hidden'); }
 
         function handleFileSelect(e) {
             const file = e.target.files[0];
             if (file) {
                 selectedFileName = file.name;
-                document.getElementById('fileLabelText').innerHTML = `<i class="fa-solid fa-file-pdf text-red-500 text-xl mb-1 block"></i><span class="font-semibold text-slate-700">${file.name}</span>`;
-                
                 const reader = new FileReader();
-                reader.onload = function(event) {
-                    selectedFileBase64 = event.target.result;
-                };
+                reader.onload = function(event) { selectedFileBase64 = event.target.result; };
                 reader.readAsDataURL(file);
             }
         }
 
-        function handleUploadNote(e) {
+        async function handleUploadNote(e) {
             e.preventDefault();
-            const title = document.getElementById('uploadTitle').value;
-            const className = document.getElementById('uploadClass').value;
-            let subject = document.getElementById('uploadSubject').value;
-            
-            if (subject === 'Other') {
-                const customSub = document.getElementById('customSubjectInput').value.trim();
-                if (customSub) {
-                    subject = customSub;
-                    const subjectFilter = document.getElementById('subjectFilter');
-                    let exists = false;
-                    for (let opt of subjectFilter.options) {
-                        if (opt.value.toLowerCase() === customSub.toLowerCase()) exists = true;
-                    }
-                    if (!exists) {
-                        const newOpt = document.createElement('option');
-                        newOpt.value = customSub;
-                        newOpt.textContent = customSub;
-                        subjectFilter.appendChild(newOpt);
-                    }
-                }
-            }
-
-            const description = document.getElementById('uploadDesc').value;
-
             const newNote = {
-                id: Date.now(),
-                title,
-                className,
-                subject,
-                description,
+                title: document.getElementById('uploadTitle').value,
+                className: document.getElementById('uploadClass').value,
+                subject: document.getElementById('uploadSubject').value,
+                description: document.getElementById('uploadDesc').value,
                 fileData: selectedFileBase64 || "sample",
-                fileName: selectedFileName || "document.pdf"
+                fileName: selectedFileName || "document.pdf",
+                createdAt: Date.now()
             };
 
-            notes.unshift(newNote);
-            saveNotes();
-            
-            // Close upload modal
-            closeUploadModal();
-            
-            // Show Admin Dashboard back instantly
-            openAdminDashboard();
-            
-            alert("Note uploaded successfully!");
+            try {
+                await window.addDoc(window.collection(window.db, "notes"), newNote);
+                alert("Note uploaded & saved to Cloud successfully!");
+                closeUploadModal();
+                openAdminDashboard();
+            } catch (error) {
+                alert("Failed to upload note to cloud.");
+            }
         }
-
-        renderNotes(notes);
     </script>
 </body>
 </html>
