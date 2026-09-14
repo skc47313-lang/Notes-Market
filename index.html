@@ -154,6 +154,19 @@
             }
         };
 
+        // Handle Subject Selection Change
+        window.handleSubjectChange = function() {
+            const select = document.getElementById('uploadSubject');
+            const customDiv = document.getElementById('customSubjectDiv');
+            if (select.value === 'Other') {
+                customDiv.classList.remove('hidden');
+                document.getElementById('uploadCustomSubject').required = true;
+            } else {
+                customDiv.classList.add('hidden');
+                document.getElementById('uploadCustomSubject').required = false;
+            }
+        };
+
         // Admin Auth
         window.openAdminLogin = function() { document.getElementById('adminLoginModal').classList.remove('hidden'); };
         window.closeAdminLogin = function() { document.getElementById('adminLoginModal').classList.add('hidden'); };
@@ -235,11 +248,15 @@
             e.preventDefault();
 
             const isLinkActive = !document.getElementById('linkUploadSection').classList.contains('hidden');
+            let subjectVal = document.getElementById('uploadSubject').value;
+            if (subjectVal === 'Other') {
+                subjectVal = document.getElementById('uploadCustomSubject').value.trim();
+            }
 
             const newNote = {
                 title: document.getElementById('uploadTitle').value,
                 className: document.getElementById('uploadClass').value,
-                subject: document.getElementById('uploadSubject').value,
+                subject: subjectVal,
                 description: document.getElementById('uploadDesc').value,
                 createdAt: Date.now()
             };
@@ -263,6 +280,9 @@
                 document.getElementById('uploadDesc').value = '';
                 document.getElementById('uploadLink').value = '';
                 document.getElementById('uploadFile').value = '';
+                document.getElementById('uploadCustomSubject').value = '';
+                document.getElementById('customSubjectDiv').classList.add('hidden');
+                document.getElementById('uploadSubject').value = 'Physics';
                 selectedFileBase64 = "";
                 selectedFileName = "";
                 await window.loadCloudNotes();
@@ -348,6 +368,7 @@
                     <option value="English">English</option>
                     <option value="Hindi">Hindi</option>
                     <option value="SST">SST</option>
+                    <option value="Other">Other</option>
                 </select>
             </div>
 
@@ -449,7 +470,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Subject</label>
-                        <select id="uploadSubject" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                        <select id="uploadSubject" required onchange="handleSubjectChange()" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
                             <option value="Physics">Physics</option>
                             <option value="Mathematics">Mathematics</option>
                             <option value="Chemistry">Chemistry</option>
@@ -458,9 +479,17 @@
                             <option value="English">English</option>
                             <option value="Hindi">Hindi</option>
                             <option value="SST">SST</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
                 </div>
+
+                <!-- Custom Subject Input (Hidden by default) -->
+                <div id="customSubjectDiv" class="hidden">
+                    <label class="block text-xs font-semibold text-indigo-600 uppercase mb-1">Type Custom Subject Name</label>
+                    <input type="text" id="uploadCustomSubject" placeholder="e.g., Computer Science, Economics..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                </div>
+
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Note Title</label>
                     <input type="text" id="uploadTitle" required placeholder="e.g., Electricity Rapid Revision" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
