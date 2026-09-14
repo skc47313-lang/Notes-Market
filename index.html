@@ -3,12 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notes Market - Professional Student Notes Marketplace</title>
+    <title id="sitePageTitle">Notes Market - Professional Student Notes Marketplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-12px) rotate(3deg); }
+        }
+        .floating-book-1 { animation: floatSlow 6s ease-in-out infinite; }
+        .floating-book-2 { animation: floatSlow 8s ease-in-out infinite 1s; }
     </style>
     
     <!-- Firebase Realtime Database Script -->
@@ -34,9 +40,31 @@
         let selectedFileBase64 = "";
         let selectedFileName = "";
 
-        // Load Notes from Cloud Realtime Database
-        window.loadCloudNotes = async function() {
+        // Load Settings & Notes from Cloud
+        window.loadCloudData = async function() {
             try {
+                // Load Settings
+                const settingsRef = ref(db, 'notes_market_settings');
+                const settingsSnap = await get(settingsRef);
+                if (settingsSnap.exists()) {
+                    const settings = settingsSnap.val();
+                    if (settings.siteName) {
+                        document.getElementById('brandTitle').textContent = settings.siteName;
+                        document.getElementById('footerBrandName').textContent = settings.siteName;
+                        document.getElementById('sitePageTitle').textContent = settings.siteName + " - Professional Marketplace";
+                        document.getElementById('settingSiteName').value = settings.siteName;
+                    }
+                    if (settings.brandSubtitle) {
+                        document.getElementById('brandSubtitle').textContent = settings.brandSubtitle;
+                        document.getElementById('settingSubtitle').value = settings.brandSubtitle;
+                    }
+                    if (settings.logoIcon) {
+                        document.getElementById('brandLogoIcon').className = "fa-solid " + settings.logoIcon + " text-xl";
+                        document.getElementById('settingLogoIcon').value = settings.logoIcon;
+                    }
+                }
+
+                // Load Notes
                 const notesRef = ref(db, 'notes_market_data');
                 const snapshot = await get(notesRef);
                 window.notes = [];
@@ -48,11 +76,11 @@
                 }
                 renderNotes(window.notes);
             } catch (error) {
-                console.error("Error loading notes: ", error);
+                console.error("Error loading cloud data: ", error);
             }
         };
 
-        // Render Notes to Grid
+        // Render Notes Grid
         function renderNotes(notesToDisplay) {
             const grid = document.getElementById('notesGrid');
             const countSpan = document.getElementById('notesCount');
@@ -62,7 +90,7 @@
 
             if (notesToDisplay.length === 0) {
                 grid.innerHTML = `
-                    <div class="col-span-full py-20 text-center bg-white rounded-3xl border border-slate-100 shadow-sm">
+                    <div class="col-span-full py-20 text-center bg-white/80 backdrop-blur-md rounded-3xl border border-slate-100 shadow-sm">
                         <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
                             <i class="fa-solid fa-folder-open"></i>
                         </div>
@@ -74,7 +102,7 @@
 
             notesToDisplay.forEach(note => {
                 const card = document.createElement('div');
-                card.className = "bg-white rounded-3xl border border-slate-100 p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative group overflow-hidden";
+                card.className = "bg-white/90 backdrop-blur-md rounded-3xl border border-slate-100 p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative group overflow-hidden";
                 
                 let actionBtn = '';
                 if (note.fileLink) {
@@ -142,7 +170,7 @@
             document.body.removeChild(a);
         };
 
-        // Toggle Upload Type (File vs Link)
+        // Toggle Upload Type
         window.switchUploadType = function(type) {
             const fileSection = document.getElementById('fileUploadSection');
             const linkSection = document.getElementById('linkUploadSection');
@@ -166,7 +194,7 @@
             }
         };
 
-        // Handle Class Selection Change
+        // Handle Class Change (Other Support)
         window.handleClassChange = function() {
             const select = document.getElementById('uploadClass');
             const customDiv = document.getElementById('customClassDiv');
@@ -179,7 +207,7 @@
             }
         };
 
-        // Handle Subject Selection Change
+        // Handle Subject Change (Other Support)
         window.handleSubjectChange = function() {
             const select = document.getElementById('uploadSubject');
             const customDiv = document.getElementById('customSubjectDiv');
@@ -206,14 +234,35 @@
             }
         };
 
+        // Admin Dashboard & Tabs Navigation
         window.openAdminDashboard = function() {
             document.getElementById('adminDashboardModal').classList.remove('hidden');
             renderAdminTable();
+            switchAdminTab('notes');
         };
 
         window.closeAdminDashboard = function() { 
             document.getElementById('adminDashboardModal').classList.add('hidden'); 
-            window.loadCloudNotes(); 
+            window.loadCloudData(); 
+        };
+
+        window.switchAdminTab = function(tabName) {
+            const notesTab = document.getElementById('adminTabNotes');
+            const settingsTab = document.getElementById('adminTabSettings');
+            const btnNotes = document.getElementById('adminBtnNotes');
+            const btnSettings = document.getElementById('adminBtnSettings');
+
+            if (tabName === 'notes') {
+                notesTab.classList.remove('hidden');
+                settingsTab.classList.add('hidden');
+                btnNotes.className = "flex-1 py-3 text-xs font-extrabold rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-100 transition-all flex items-center justify-center space-x-2";
+                btnSettings.className = "flex-1 py-3 text-xs font-extrabold rounded-2xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all flex items-center justify-center space-x-2";
+            } else {
+                notesTab.classList.add('hidden');
+                settingsTab.classList.remove('hidden');
+                btnSettings.className = "flex-1 py-3 text-xs font-extrabold rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-100 transition-all flex items-center justify-center space-x-2";
+                btnNotes.className = "flex-1 py-3 text-xs font-extrabold rounded-2xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all flex items-center justify-center space-x-2";
+            }
         };
 
         function renderAdminTable() {
@@ -241,11 +290,32 @@
                 try {
                     await remove(ref(db, 'notes_market_data/' + id));
                     alert("Deleted successfully!");
-                    await window.loadCloudNotes();
+                    await window.loadCloudData();
                     renderAdminTable();
                 } catch (err) {
                     alert("Error deleting note.");
                 }
+            }
+        };
+
+        // Save Settings (Website Name, Logo, Subtitle)
+        window.saveWebsiteSettings = async function(e) {
+            e.preventDefault();
+            const newName = document.getElementById('settingSiteName').value.trim();
+            const newSubtitle = document.getElementById('settingSubtitle').value.trim();
+            const newLogo = document.getElementById('settingLogoIcon').value.trim();
+
+            try {
+                await set(ref(db, 'notes_market_settings'), {
+                    siteName: newName,
+                    brandSubtitle: newSubtitle,
+                    logoIcon: newLogo
+                });
+                alert("Website settings updated successfully across cloud!");
+                closeAdminDashboard();
+                await window.loadCloudData();
+            } catch (err) {
+                alert("Error saving settings.");
             }
         };
 
@@ -256,7 +326,7 @@
             const file = e.target.files[0];
             if (file) {
                 if(file.size > 8 * 1024 * 1024) {
-                    alert("File size is larger than 8MB. Please use Google Drive Link option for large files!");
+                    alert("File size is larger than 8MB. Please use Google Drive Link option!");
                     e.target.value = "";
                     return;
                 }
@@ -271,7 +341,6 @@
 
         window.handleUploadNote = async function(e) {
             e.preventDefault();
-
             const isLinkActive = !document.getElementById('linkUploadSection').classList.contains('hidden');
             
             let classVal = document.getElementById('uploadClass').value;
@@ -305,7 +374,7 @@
                 const newNoteRef = push(notesRef);
                 await set(newNoteRef, newNote);
 
-                alert("Note published to Cloud successfully!");
+                alert("Note published successfully!");
                 closeUploadModal();
                 document.getElementById('uploadTitle').value = '';
                 document.getElementById('uploadDesc').value = '';
@@ -315,35 +384,44 @@
                 document.getElementById('uploadCustomSubject').value = '';
                 document.getElementById('customClassDiv').classList.add('hidden');
                 document.getElementById('customSubjectDiv').classList.add('hidden');
-                document.getElementById('uploadClass').value = 'Class 10';
-                document.getElementById('uploadSubject').value = 'Physics';
                 selectedFileBase64 = "";
                 selectedFileName = "";
-                await window.loadCloudNotes();
+                await window.loadCloudData();
                 openAdminDashboard();
             } catch (error) {
                 console.error(error);
-                alert("Failed to publish note. If file is big, use Google Drive Link tab.");
+                alert("Failed to publish note.");
             }
         };
 
         window.addEventListener('DOMContentLoaded', () => {
-            window.loadCloudNotes();
+            window.loadCloudData();
         });
     </script>
 </head>
-<body class="bg-slate-50/50 text-slate-800 min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white">
+<body class="bg-slate-50/70 text-slate-800 min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white relative overflow-x-hidden">
+
+    <!-- Decorative Background Watermark & Floating Books Elements -->
+    <div class="absolute top-16 left-6 text-indigo-200/40 pointer-events-none select-none floating-book-1 text-7xl z-0">
+        <i class="fa-solid fa-book-open"></i>
+    </div>
+    <div class="absolute top-96 right-10 text-violet-200/40 pointer-events-none select-none floating-book-2 text-8xl z-0">
+        <i class="fa-solid fa-graduation-cap"></i>
+    </div>
+    <div class="absolute bottom-40 left-12 text-slate-200/50 pointer-events-none select-none floating-book-2 text-6xl z-0">
+        <i class="fa-solid fa-file-lines"></i>
+    </div>
 
     <!-- Header / Navigation -->
     <header class="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
             <div class="flex items-center space-x-3.5 cursor-pointer group" onclick="resetFilters()">
                 <div class="bg-gradient-to-tr from-indigo-600 to-violet-600 text-white p-3 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200 group-hover:scale-105 transition-transform">
-                    <i class="fa-solid fa-graduation-cap text-xl"></i>
+                    <i id="brandLogoIcon" class="fa-solid fa-graduation-cap text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-extrabold bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 bg-clip-text text-transparent">Notes Market</h1>
-                    <p class="text-[11px] text-slate-400 font-semibold tracking-wider uppercase">Verified Student Hub</p>
+                    <h1 id="brandTitle" class="text-xl font-extrabold bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 bg-clip-text text-transparent">Notes Market</h1>
+                    <p id="brandSubtitle" class="text-[11px] text-slate-400 font-semibold tracking-wider uppercase">Verified Student Hub</p>
                 </div>
             </div>
 
@@ -357,7 +435,7 @@
     </header>
 
     <!-- Main Content Area -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full relative z-10">
         
         <!-- Hero Search Section -->
         <div class="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 rounded-[2.5rem] p-8 md:p-14 text-white mb-10 shadow-2xl shadow-indigo-200 relative overflow-hidden">
@@ -377,7 +455,7 @@
         </div>
 
         <!-- Filter Controls -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white/90 backdrop-blur-md p-5 rounded-3xl border border-slate-100 shadow-sm">
             <div class="flex flex-wrap items-center gap-3.5 w-full md:w-auto">
                 <div class="flex items-center space-x-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
                     <i class="fa-solid fa-filter text-indigo-600"></i>
@@ -429,7 +507,7 @@
 
     <!-- Professional Corner Watermark Badge -->
     <div class="fixed bottom-4 right-4 z-30 pointer-events-none select-none">
-        <div class="bg-white/80 backdrop-blur-md border border-slate-200/80 shadow-lg px-4 py-2.5 rounded-2xl flex items-center space-x-2.5 text-slate-700">
+        <div class="bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-lg px-4 py-2.5 rounded-2xl flex items-center space-x-2.5 text-slate-700">
             <div class="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-ping"></div>
             <div class="text-[11px] font-extrabold tracking-tight">
                 <span class="text-indigo-600">NOTES</span> MARKET <span class="text-[9px] text-slate-400 font-semibold block">Official Hub &bull; 2026</span>
@@ -438,13 +516,13 @@
     </div>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-slate-100 py-8 text-center text-xs text-slate-400 font-medium">
-        <p>&copy; 2026 Notes Market. Built for Students with Professional Cloud Architecture.</p>
+    <footer class="bg-white/80 backdrop-blur-md border-t border-slate-100 py-8 text-center text-xs text-slate-400 font-medium relative z-10">
+        <p>&copy; 2026 <span id="footerBrandName">Notes Market</span>. Built for Students with Professional Cloud Architecture.</p>
     </footer>
 
     <!-- Admin Login Modal -->
     <div id="adminLoginModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-[2.5rem] max-w-md w-full p-8 shadow-2xl relative border border-slate-100 animate-in fade-in zoom-in duration-200">
+        <div class="bg-white rounded-[2.5rem] max-w-md w-full p-8 shadow-2xl relative border border-slate-100">
             <button onclick="closeAdminLogin()" class="absolute right-6 top-6 text-slate-400 hover:text-slate-600 transition p-2">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
@@ -453,7 +531,7 @@
                     <i class="fa-solid fa-shield-halved"></i>
                 </div>
                 <h3 class="text-xl font-extrabold text-slate-800">Admin Authentication</h3>
-                <p class="text-slate-400 text-xs mt-1">Sign in to manage uploaded repository notes</p>
+                <p class="text-slate-400 text-xs mt-1">Sign in to manage website settings & notes</p>
             </div>
             <form onsubmit="handleAdminLogin(event)" class="space-y-4">
                 <div>
@@ -472,34 +550,78 @@
 
     <!-- Admin Dashboard Modal -->
     <div id="adminDashboardModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex flex-col justify-end sm:items-center sm:justify-center p-0 sm:p-4">
-        <div class="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-100">
+        <div class="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] max-w-4xl w-full max-h-[95vh] flex flex-col shadow-2xl overflow-hidden border border-slate-100">
+            <!-- Modal Header -->
             <div class="p-6 bg-slate-900 text-white flex justify-between items-center">
                 <div class="flex items-center space-x-3">
                     <div class="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-sm"><i class="fa-solid fa-gauge"></i></div>
-                    <h3 class="font-bold text-base">Cloud Admin Control Panel</h3>
+                    <h3 class="font-bold text-base">Admin Control Panel & Settings</h3>
                 </div>
                 <button onclick="closeAdminDashboard()" class="text-slate-400 hover:text-white transition p-2"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
+
+            <!-- Admin Nav Switcher Tabs -->
+            <div class="bg-slate-100 px-6 pt-4 flex gap-3 border-b border-slate-200/60">
+                <button type="button" id="adminBtnNotes" onclick="switchAdminTab('notes')" class="flex-1 py-3 text-xs font-extrabold rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-100 transition-all flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-folder-open"></i><span>Manage Notes</span>
+                </button>
+                <button type="button" id="adminBtnSettings" onclick="switchAdminTab('settings')" class="flex-1 py-3 text-xs font-extrabold rounded-2xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-gear"></i><span>Website Branding & Settings</span>
+                </button>
+            </div>
+
             <div class="p-6 overflow-y-auto flex-grow bg-slate-50/50 space-y-6">
-                <div class="flex justify-between items-center bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                    <div>
-                        <h4 class="font-extrabold text-slate-800 text-sm">Repository Cloud Database</h4>
-                        <p class="text-xs text-slate-400 font-medium">Total active cloud notes: <span id="adminTotalNotes" class="text-indigo-600 font-bold">0</span></p>
+                
+                <!-- Tab 1: Notes Management -->
+                <div id="adminTabNotes" class="space-y-6">
+                    <div class="flex justify-between items-center bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+                        <div>
+                            <h4 class="font-extrabold text-slate-800 text-sm">Repository Cloud Database</h4>
+                            <p class="text-xs text-slate-400 font-medium">Total active cloud notes: <span id="adminTotalNotes" class="text-indigo-600 font-bold">0</span></p>
+                        </div>
+                        <button onclick="openUploadModal()" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-md shadow-indigo-100 hover:opacity-95 transition-all flex items-center space-x-2">
+                            <i class="fa-solid fa-plus text-[10px]"></i><span>Add New Note</span>
+                        </button>
                     </div>
-                    <button onclick="openUploadModal()" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-md shadow-indigo-100 hover:opacity-95 transition-all flex items-center space-x-2"><i class="fa-solid fa-plus text-[10px]"></i><span>Add New Note</span></button>
+                    <div class="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-400 font-bold text-[11px] uppercase tracking-wider border-b border-slate-100">
+                                    <th class="p-4.5">Title & Subject</th>
+                                    <th class="p-4.5">Class Name</th>
+                                    <th class="p-4.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminNotesTableBody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
-                    <table class="w-full text-left border-collapse text-sm">
-                        <thead>
-                            <tr class="bg-slate-50 text-slate-400 font-bold text-[11px] uppercase tracking-wider border-b border-slate-100">
-                                <th class="p-4.5">Title & Subject</th>
-                                <th class="p-4.5">Class Name</th>
-                                <th class="p-4.5 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="adminNotesTableBody" class="divide-y divide-slate-100"></tbody>
-                    </table>
+
+                <!-- Tab 2: Website Settings & Customization -->
+                <div id="adminTabSettings" class="hidden space-y-6">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                        <h4 class="font-extrabold text-slate-800 text-base mb-1">Customize Website Branding</h4>
+                        <p class="text-xs text-slate-400 mb-6">Edit your website title, subtitle, and logo icon dynamically.</p>
+                        
+                        <form onsubmit="saveWebsiteSettings(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">Website Name</label>
+                                <input type="text" id="settingSiteName" required class="w-full px-4.5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">Website Subtitle / Tagline</label>
+                                <input type="text" id="settingSubtitle" required class="w-full px-4.5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">Logo FontAwesome Icon Class</label>
+                                <input type="text" id="settingLogoIcon" required placeholder="e.g., fa-graduation-cap, fa-book, fa-school" class="w-full px-4.5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                                <p class="text-[11px] text-slate-400 mt-1">You can use any icon name from FontAwesome 6.</p>
+                            </div>
+                            <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold py-3.5 rounded-2xl text-xs shadow-lg shadow-indigo-200 hover:opacity-95 transition-all">Save Changes to Cloud</button>
+                        </form>
+                    </div>
                 </div>
+
             </div>
         </div>
     </div>
