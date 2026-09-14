@@ -64,6 +64,14 @@
             notesToDisplay.forEach(note => {
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between";
+                
+                let actionBtn = '';
+                if (note.fileLink) {
+                    actionBtn = `<a href="${note.fileLink}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold inline-block">View Drive Link</a>`;
+                } else {
+                    actionBtn = `<button onclick="downloadNote('${note.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold">Download PDF</button>`;
+                }
+
                 card.innerHTML = `
                     <div>
                         <div class="flex justify-between items-start gap-2 mb-3">
@@ -74,8 +82,8 @@
                         <p class="text-slate-600 text-xs leading-relaxed mb-4 line-clamp-3">${note.description || ''}</p>
                     </div>
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                        <span class="text-xs text-slate-400 truncate max-w-[140px]"><i class="fa-solid fa-file-pdf text-red-500 mr-1"></i> ${note.fileName || 'document.pdf'}</span>
-                        <button onclick="downloadNote('${note.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold">Download</button>
+                        <span class="text-xs text-slate-400 truncate max-w-[140px]"><i class="fa-solid fa-file-pdf text-red-500 mr-1"></i> ${note.fileName || 'Drive Document'}</span>
+                        ${actionBtn}
                     </div>
                 `;
                 grid.appendChild(card);
@@ -105,14 +113,14 @@
             renderNotes(window.notes);
         };
 
-        // Download Note
+        // Download Direct Note
         window.downloadNote = function(id) {
             const note = window.notes.find(n => n.id === id);
             if (!note) return;
             let downloadUrl = note.fileData;
             if (!downloadUrl || downloadUrl.length < 100) {
-                const blob = new Blob([`Sample notes for ${note.title}`], { type: 'application/pdf' });
-                downloadUrl = URL.createObjectURL(blob);
+                alert("File data not available.");
+                return;
             }
             const a = document.createElement('a');
             a.href = downloadUrl;
@@ -120,6 +128,30 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+        };
+
+        // Toggle Upload Type (File vs Link)
+        window.switchUploadType = function(type) {
+            const fileSection = document.getElementById('fileUploadSection');
+            const linkSection = document.getElementById('linkUploadSection');
+            const btnFile = document.getElementById('tabFileBtn');
+            const btnLink = document.getElementById('tabLinkBtn');
+
+            if (type === 'file') {
+                fileSection.classList.remove('hidden');
+                linkSection.classList.add('hidden');
+                btnFile.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow";
+                btnLink.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-slate-100 text-slate-600";
+                document.getElementById('uploadFile').required = true;
+                document.getElementById('uploadLink').required = false;
+            } else {
+                fileSection.classList.add('hidden');
+                linkSection.classList.remove('hidden');
+                btnLink.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow";
+                btnFile.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-slate-100 text-slate-600";
+                document.getElementById('uploadFile').required = false;
+                document.getElementById('uploadLink').required = true;
+            }
         };
 
         // Admin Auth
@@ -185,6 +217,11 @@
         window.handleFileSelect = function(e) {
             const file = e.target.files[0];
             if (file) {
+                if(file.size > 8 * 1024 * 1024) {
+                    alert("File size is larger than 8MB. Please use Google Drive Link option for large files!");
+                    e.target.value = "";
+                    return;
+                }
                 selectedFileName = file.name;
                 const reader = new FileReader();
                 reader.onload = function(event) { 
@@ -197,28 +234,42 @@
         window.handleUploadNote = async function(e) {
             e.preventDefault();
 
+            const isLinkActive = !document.getElementById('linkUploadSection').classList.contains('hidden');
+
             const newNote = {
                 title: document.getElementById('uploadTitle').value,
                 className: document.getElementById('uploadClass').value,
                 subject: document.getElementById('uploadSubject').value,
                 description: document.getElementById('uploadDesc').value,
-                fileData: selectedFileBase64 || "sample",
-                fileName: selectedFileName || "document.pdf",
                 createdAt: Date.now()
             };
+
+            if (isLinkActive) {
+                newNote.fileLink = document.getElementById('uploadLink').value;
+                newNote.fileName = "Drive Folder / PDF";
+            } else {
+                newNote.fileData = selectedFileBase64;
+                newNote.fileName = selectedFileName || "document.pdf";
+            }
 
             try {
                 const notesRef = ref(db, 'notes_market_data');
                 const newNoteRef = push(notesRef);
                 await set(newNoteRef, newNote);
 
-                alert("Note uploaded & saved to Cloud successfully!");
+                alert("Note published to Cloud successfully!");
                 closeUploadModal();
+                document.getElementById('uploadTitle').value = '';
+                document.getElementById('uploadDesc').value = '';
+                document.getElementById('uploadLink').value = '';
+                document.getElementById('uploadFile').value = '';
+                selectedFileBase64 = "";
+                selectedFileName = "";
                 await window.loadCloudNotes();
                 openAdminDashboard();
             } catch (error) {
                 console.error(error);
-                alert("Failed to upload note to cloud.");
+                alert("Failed to publish note. If file is big, use Google Drive Link tab.");
             }
         };
 
@@ -354,7 +405,7 @@
                         <h4 class="font-bold text-slate-800 text-sm">Cloud Notes Repository</h4>
                         <p class="text-xs text-slate-500">Total notes: <span id="adminTotalNotes">0</span></p>
                     </div>
-                    <button onclick="openUploadModal()" class="bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md"><i class="fa-solid fa-plus text-xs mr-1"></i> Upload Note</button>
+                    <button onclick="openUploadModal()" class="bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md"><i class="fa-solid fa-plus text-xs mr-1"></i> Add New Note</button>
                 </div>
                 <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                     <table class="w-full text-left border-collapse text-sm">
@@ -376,7 +427,14 @@
     <div id="uploadNoteModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl relative border border-slate-100">
             <button onclick="closeUploadModal()" class="absolute right-5 top-5 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-            <h3 class="text-xl font-bold text-slate-800 mb-4">Upload PDF Note to Cloud</h3>
+            <h3 class="text-xl font-bold text-slate-800 mb-4">Add Study Note / PDF</h3>
+            
+            <!-- Type Switcher Tabs -->
+            <div class="flex bg-slate-100 p-1 rounded-xl mb-4">
+                <button type="button" id="tabFileBtn" onclick="switchUploadType('file')" class="flex-1 py-2 text-xs font-bold rounded-lg bg-indigo-600 text-white shadow">Direct File Upload</button>
+                <button type="button" id="tabLinkBtn" onclick="switchUploadType('link')" class="flex-1 py-2 text-xs font-bold rounded-lg bg-slate-100 text-slate-600">Google Drive Link</button>
+            </div>
+
             <form onsubmit="handleUploadNote(event)" class="space-y-4">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -405,16 +463,25 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Note Title</label>
-                    <input type="text" id="uploadTitle" required placeholder="e.g., Chapter 1 Notes" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                    <input type="text" id="uploadTitle" required placeholder="e.g., Electricity Rapid Revision" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Description</label>
                     <textarea id="uploadDesc" rows="2" placeholder="Brief overview..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></textarea>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Select PDF File (Badi files supported)</label>
+
+                <!-- File Upload Section -->
+                <div id="fileUploadSection">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Select PDF File (Max 8MB)</label>
                     <input type="file" id="uploadFile" accept=".pdf" required onchange="handleFileSelect(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                 </div>
+
+                <!-- Google Drive Link Section (Hidden by default) -->
+                <div id="linkUploadSection" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Google Drive PDF / Folder Link</label>
+                    <input type="url" id="uploadLink" placeholder="https://drive.google.com/..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                </div>
+
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl text-sm shadow-lg">Publish to Cloud</button>
             </form>
         </div>
